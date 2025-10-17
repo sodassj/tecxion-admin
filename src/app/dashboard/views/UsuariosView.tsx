@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { Users, Search, Filter, UserPlus, MoreVertical, Mail, Phone, MapPin, Calendar, Shield, Activity, Download, Upload, Edit2, Trash2 } from 'lucide-react';
+import { Users, Search, Filter, UserPlus, MoreVertical, Mail, Phone, MapPin, Shield, Activity, Download, Edit2, Trash2 } from 'lucide-react';
 
 export default function UsuariosView() {
   const [searchTerm, setSearchTerm] = useState('');

@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { Settings, Shield, Bell, Wifi, MapPin, Database, Globe, Lock, Eye, EyeOff, Save, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Settings, Shield, Bell, Wifi, MapPin, Database, Globe, Eye, EyeOff, Save, RefreshCw, AlertTriangle } from 'lucide-react';
 
 export default function ConfigView() {
   const [showApiKey, setShowApiKey] = useState(false);

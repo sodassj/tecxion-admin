@@ -17,7 +17,8 @@ export default function TecsupLogin() {
   const adminEmails = [
     "admin@tecsup.edu.pe",
     "gestion@tecsup.edu.pe",
-    "jose.maldonado.p@tecsup.edu.pe"
+    "jose.maldonado.p@tecsup.edu.pe",
+    "fabrizio.valdez@tecsup.edu.pe"
   ];
 
   const isAdmin = (email: string | null): boolean => {
@@ -58,10 +59,8 @@ export default function TecsupLogin() {
         return;
       }
 
-      toast.success("¡Bienvenido!", { autoClose: 2000 });
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 2200);
+      toast.success("¡Bienvenido!", { autoClose: 1500 });
+      router.push('/dashboard');
     } catch (err: unknown) {
       if (err && typeof err === "object" && "code" in err) {
         setError(obtenerMensajeError((err as { code: string }).code));

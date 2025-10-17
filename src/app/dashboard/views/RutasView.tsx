@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { MapPin, Navigation, Plus, Edit2, Trash2, Clock, TrendingUp, Users, Search, Filter, Map, Building2, Footprints, Calendar, Zap, Smartphone, RefreshCw, Settings, Save, X } from 'lucide-react';
+import { MapPin, Navigation, Plus, Edit2, Trash2, Clock, TrendingUp, Search, Filter, Map, Building2, Calendar, Zap, Smartphone, RefreshCw, Settings, X } from 'lucide-react';
 
 export default function RutasView() {
   const [selectedEdificio, setSelectedEdificio] = useState('Todos');
@@ -735,7 +735,7 @@ const colorClasses: Record<string, string> = {
   <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
     <div className="bg-white rounded-2xl max-w-md w-full p-6">
       <h3 className="text-lg font-bold text-slate-800">Confirmar eliminación</h3>
-      <p className="mt-2 text-slate-600">¿Deseas eliminar la ruta "{selectedRuta.nombre}"?</p>
+      <p className="mt-2 text-slate-600">¿Deseas eliminar la ruta {selectedRuta.nombre}?</p>
       <div className="mt-4 flex justify-end gap-3">
         <button
           onClick={() => setShowDeleteModal(false)}

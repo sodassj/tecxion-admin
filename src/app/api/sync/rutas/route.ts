@@ -1,24 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
 
-// Datos de ejemplo (puedes reemplazar con tu base de datos)
-let rutas = [
-  { id: 1, nombre: 'Ruta A', descripcion: 'Descripción A' },
-  { id: 2, nombre: 'Ruta B', descripcion: 'Descripción B' },
-];
+let prisma: PrismaClient;
 
-// GET: Obtener todas las rutas
-export async function GET(req: NextRequest) {
-  return NextResponse.json(rutas);
+if (process.env.NODE_ENV === 'production') {
+  prisma = new PrismaClient();
+} else {
+  if (!(global as any).prisma) {
+    (global as any).prisma = new PrismaClient();
+  }
+  prisma = (global as any).prisma;
 }
 
-// POST: Agregar una nueva ruta
+// GET: obtener todas las rutas
+export async function GET() {
+  try {
+    const rutas = await prisma.ruta.findMany();
+    return NextResponse.json(rutas);
+  } catch (e) {
+    return NextResponse.json(
+      { error: 'Error al obtener rutas', details: (e as Error).message },
+      { status: 500 }
+    );
+  }
+}
+
+// POST: crear una nueva ruta
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json();
-    const nuevaRuta = { id: rutas.length + 1, ...data };
-    rutas.push(nuevaRuta);
-    return NextResponse.json({ message: 'Ruta agregada', ruta: nuevaRuta });
-  } catch (error) {
-    return NextResponse.json({ error: 'Error al agregar la ruta' }, { status: 400 });
+
+    if (!data.nombre || !data.descripcion) {
+      return NextResponse.json(
+        { error: 'Nombre y descripción son obligatorios' },
+        { status: 400 }
+      );
+    }
+
+    const nueva = await prisma.ruta.create({
+      data: {
+        nombre: data.nombre,
+        descripcion: data.descripcion,
+      },
+    });
+
+    return NextResponse.json({ ruta: nueva });
+  } catch (e) {
+    return NextResponse.json(
+      { error: 'Error creando ruta', details: (e as Error).message },
+      { status: 400 }
+    );
   }
 }

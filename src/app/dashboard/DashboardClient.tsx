@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { MapPin, Navigation, Users, Activity, Bell, Settings, Menu, BarChart3, Clock, ChevronRight, Calendar, User, ChevronLeft, X, LogOut, Wifi, WifiOff } from 'lucide-react';
+import { Navigation, Users, Activity, Bell, Settings, Menu, BarChart3, Clock, ChevronRight, Calendar, User, ChevronLeft, X, LogOut} from 'lucide-react';
 import Image from 'next/image';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
@@ -45,8 +45,8 @@ export default function DashboardClient({ children }: { children: React.ReactNod
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [userName, setUserName] = useState<string | null>(null);
-  const [notifications, setNotifications] = useState(3);
-  const [systemStatus, setSystemStatus] = useState<SystemStatus>({
+  const [notifications] = useState(3);
+  const [systemStatus] = useState<SystemStatus>({
     online: true,
     activeBeacons: 47,
     totalBeacons: 50
@@ -190,9 +190,11 @@ export default function DashboardClient({ children }: { children: React.ReactNod
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <img
+                <Image
                   src="/logo-tec1.png"
                   alt="Logo Tecsup"
+                  width={140}   
+                  height={45}
                   className="h-8 lg:h-11 object-contain"
                 />
                 <button

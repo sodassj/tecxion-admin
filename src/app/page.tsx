@@ -36,22 +36,22 @@ const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
   };
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          startAnimation();
-        }
-      },
-      { threshold: 0.6 }
-    );
+  const observer = new IntersectionObserver(
+    ([entry]) => {
+      if (entry.isIntersecting) {
+        startAnimation();
+      }
+    },
+    { threshold: 0.6 }
+  );
 
-    const current = counterRef.current;
-    if (current) observer.observe(current);
+  const current = counterRef.current;
+  if (current) observer.observe(current);
 
-    return () => {
-      if (current) observer.unobserve(current);
-    };
-  }, []);
+  return () => {
+    if (current) observer.unobserve(current);
+  };
+}, [startAnimation]);
 
   return (
     <div ref={counterRef} className="text-4xl font-bold text-[#00B9F1]">
@@ -85,10 +85,12 @@ export default function HomePage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 {/* Logo Tecsup */}
-                <img
+                <Image
             src="/logo-tec1.png"
             alt="Logo Tecsup"
-            className="h-[1.875rem] lg:h-[2.625rem]"
+            width={140}   
+            height={45}
+            className="h-8 lg:h-11 object-contain"
           />
               </div>
               <div className="hidden md:flex items-center space-x-6">
@@ -336,6 +338,7 @@ export default function HomePage() {
                 
                 <div className="text-center group">
                   <div className="mb-3 flex justify-center">
+                    <span className="text-[#00B9F1] font-bold text-lg">+</span>
                     <AnimatedCounter end={89} />
                   </div>
                   <p className="text-slate-700 font-bold text-lg">Beca Ferreyros</p>
