@@ -1,12 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
-
 }
 
 datasource db {
@@ -14,9 +7,74 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Ruta {
-  id           Int     @id @default(autoincrement())
+model Usuario {
+  id_usuario   Int      @id @default(autoincrement())
+  firebase_uid String   @unique
   nombre       String
-  descripcion  String?
-  sincronizado Boolean @default(false)
+  apellido     String
+  correo       String   @unique
+  carrera      String?
+  seccion      String?
+  horarios     Horario[]
+  rutas        Ruta[]
+  reportes     ReporteUsuario[]
+}
+
+model Departamento {
+  id_edificio     Int      @id @default(autoincrement())
+  nombre_edificio String
+  ubicacion       String?
+  latitud         Float?
+  longitud        Float?
+  aulas           Aula[]   // relación inversa definida en Aula
+}
+
+model Aula {
+  id_aula          Int      @id @default(autoincrement())
+  nombre_aula      String
+  ubicacion_interna String?
+  id_edificio      Int?
+  latitud          Float?
+  longitud         Float?
+
+  departamento     Departamento? @relation(fields: [id_edificio], references: [id_edificio])
+  rutas_origen     Ruta[]        @relation("OrigenRuta")
+  rutas_destino    Ruta[]        @relation("DestinoRuta")
+  horarios         Horario[]
+}
+
+model Horario {
+  id_horario  Int      @id @default(autoincrement())
+  curso       String
+  hora_inicio DateTime
+  hora_fin    DateTime
+  dia_semana  String
+  id_usuario  Int?
+  id_aula     Int?
+  usuario     Usuario? @relation(fields: [id_usuario], references: [id_usuario], onDelete: Cascade)
+  aula        Aula?    @relation(fields: [id_aula], references: [id_aula], onDelete: SetNull)
+}
+
+model Ruta {
+  id_ruta         Int      @id @default(autoincrement())
+  origen_id       Int
+  destino_id      Int
+  coordenadas     Json
+  distancia       Float?
+  tiempo_estimado Int?
+  ruta_optima     String?
+  id_usuario      Int?
+
+  origen   Aula    @relation("OrigenRuta", fields: [origen_id], references: [id_aula])
+  destino  Aula    @relation("DestinoRuta", fields: [destino_id], references: [id_aula])
+  usuario  Usuario? @relation(fields: [id_usuario], references: [id_usuario], onDelete: Cascade)
+}
+
+model ReporteUsuario {
+  id_reporte_usuario Int      @id @default(autoincrement())
+  descripcion        String
+  tipo               String?
+  fecha_envio        DateTime @default(now())
+  id_usuario         Int?
+  usuario            Usuario? @relation(fields: [id_usuario], references: [id_usuario], onDelete: Cascade)
 }

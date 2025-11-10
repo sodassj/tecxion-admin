@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
 let prisma: PrismaClient;
+
 if (process.env.NODE_ENV === 'production') {
   prisma = new PrismaClient();
 } else {
@@ -11,54 +12,53 @@ if (process.env.NODE_ENV === 'production') {
   prisma = (global as any).prisma;
 }
 
-// PUT: actualizar ruta
-export async function PUT(req: NextRequest, context: any) {
-  const id = Number(context.params.id);
-  if (isNaN(id)) {
+// ✅ PUT: actualizar una ruta existente
+export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
+  const routeId = Number(id);
+  if (isNaN(routeId)) {
     return NextResponse.json({ error: 'ID inválido' }, { status: 400 });
   }
 
   try {
     const data = await req.json();
 
-    if (!data.nombre || !data.descripcion) {
-      return NextResponse.json(
-        { error: 'Nombre y descripción son obligatorios' },
-        { status: 400 }
-      );
-    }
-
     const updated = await prisma.ruta.update({
-      where: { id },
+      where: { id_ruta: routeId },
       data: {
-        nombre: data.nombre,
-        descripcion: data.descripcion,
-        sincronizado: false,
+        origen_id: data.origen_id ?? undefined,
+        destino_id: data.destino_id ?? undefined,
+        coordenadas: data.coordenadas ?? undefined,
+        distancia: data.distancia ?? undefined,
+        tiempo_estimado: data.tiempo_estimado ?? undefined,
+        ruta_optima: data.ruta_optima ?? undefined,
+        id_usuario: data.id_usuario ?? undefined,
       },
     });
 
     return NextResponse.json({ ruta: updated });
   } catch (e) {
     return NextResponse.json(
-      { error: 'Ruta no encontrada o error', details: (e as Error).message },
+      { error: 'Error al actualizar la ruta', details: (e as Error).message },
       { status: 400 }
     );
   }
 }
 
-// DELETE: eliminar ruta
-export async function DELETE(req: NextRequest, context: any) {
-  const id = Number(context.params.id);
-  if (isNaN(id)) {
+// ✅ DELETE: eliminar una ruta por ID
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
+  const routeId = Number(id);
+  if (isNaN(routeId)) {
     return NextResponse.json({ error: 'ID inválido' }, { status: 400 });
   }
 
   try {
-    await prisma.ruta.delete({ where: { id } });
-    return NextResponse.json({ message: 'Ruta eliminada' });
+    await prisma.ruta.delete({ where: { id_ruta: routeId } });
+    return NextResponse.json({ message: `Ruta ${id} eliminada correctamente` });
   } catch (e) {
     return NextResponse.json(
-      { error: 'Ruta no encontrada o error', details: (e as Error).message },
+      { error: 'Error al eliminar la ruta', details: (e as Error).message },
       { status: 400 }
     );
   }
