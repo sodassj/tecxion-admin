@@ -13,12 +13,9 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // ✅ GET → obtener un horario por ID
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(req: NextRequest, context: { params: { id: string } }) {
   try {
-    const id = parseInt(params.id);
+    const id = parseInt(context.params.id);
     const horario = await prisma.horario.findUnique({
       where: { id_horario: id },
       include: {
@@ -41,12 +38,9 @@ export async function GET(
 }
 
 // ✏️ PUT → actualizar un horario
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(req: NextRequest, context: { params: { id: string } }) {
   try {
-    const id = parseInt(params.id);
+    const id = parseInt(context.params.id);
     const body = await req.json();
 
     const horarioActualizado = await prisma.horario.update({
@@ -71,12 +65,9 @@ export async function PUT(
 }
 
 // 🗑️ DELETE → eliminar un horario
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(req: NextRequest, context: { params: { id: string } }) {
   try {
-    const id = parseInt(params.id);
+    const id = parseInt(context.params.id);
     await prisma.horario.delete({
       where: { id_horario: id },
     });
