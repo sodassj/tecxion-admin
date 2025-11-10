@@ -12,13 +12,13 @@ if (process.env.NODE_ENV === 'production') {
   prisma = (global as any).prisma;
 }
 
-// ✅ GET → obtener un horario por ID
+// GET → obtener un horario por ID
 export async function GET(
   _req: NextRequest,
-  context: { params: { id: string } }
-): Promise<NextResponse> {
+  { params }: { params: { id: string } }
+) {
   try {
-    const id = parseInt(context.params.id);
+    const id = parseInt(params.id);
     const horario = await prisma.horario.findUnique({
       where: { id_horario: id },
       include: {
@@ -40,14 +40,14 @@ export async function GET(
   }
 }
 
-// ✏️ PUT → actualizar un horario
+// PUT → actualizar un horario
 export async function PUT(
-  _req: NextRequest,
-  context: { params: { id: string } }
-): Promise<NextResponse> {
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const id = parseInt(context.params.id);
-    const body = await _req.json();
+    const id = parseInt(params.id);
+    const body = await req.json();
 
     const horarioActualizado = await prisma.horario.update({
       where: { id_horario: id },
@@ -70,13 +70,13 @@ export async function PUT(
   }
 }
 
-// 🗑️ DELETE → eliminar un horario
+// DELETE → eliminar un horario
 export async function DELETE(
   _req: NextRequest,
-  context: { params: { id: string } }
-): Promise<NextResponse> {
+  { params }: { params: { id: string } }
+) {
   try {
-    const id = parseInt(context.params.id);
+    const id = parseInt(params.id);
     await prisma.horario.delete({
       where: { id_horario: id },
     });
