@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { MapPin, Navigation, Plus, Edit2, Trash2, Clock, Search, Filter, Map, Building2, Calendar, Zap, Smartphone, RefreshCw, Settings, X } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
 
 type Aula = {
   id_aula: number;
@@ -54,23 +55,21 @@ export default function RutasView() {
 
 
   const getCategoria = (aula: Aula) => {
-  // Usamos nombre_aula en lugar de ubicacion_interna
-  if (!aula.nombre_aula) return 'Otros';
+    if (!aula.nombre_aula) return 'Otros';
 
-  const nombre = aula.nombre_aula
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, ''); // quita tildes
+    const nombre = aula.nombre_aula
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
 
-  if (nombre.includes('lab') || nombre.includes('laboratorio')) return 'Laboratorios';
-  if (nombre.includes('salon') || nombre.includes('aula')) return 'Aulas';
-  if (nombre.includes('biblioteca')) return 'Biblioteca';
-  if (nombre.includes('admin') || nombre.includes('oficina') || nombre.includes('direccion')) return 'Admin';
-  if (nombre.includes('cafeteria')) return 'Cafetería';
+    if (nombre.includes('lab') || nombre.includes('laboratorio')) return 'Laboratorios';
+    if (nombre.includes('salon') || nombre.includes('aula')) return 'Aulas';
+    if (nombre.includes('biblioteca')) return 'Biblioteca';
+    if (nombre.includes('admin') || nombre.includes('oficina') || nombre.includes('direccion')) return 'Administración';
+    if (nombre.includes('cafeteria')) return 'Cafetería';
 
-  return 'Otros';
-};
-
+    return 'Otros';
+  };
 
   
   const [newRuta, setNewRuta] = useState<Partial<Ruta>>({
@@ -116,29 +115,31 @@ export default function RutasView() {
   const cargarDatos = async () => {
     setIsLoading(true);
     try {
-      // Cargar rutas
-      const rutasResponse = await fetch('http://localhost:3000/api/sync/rutas');
-      const rutasData = await rutasResponse.json();
-      
-      // Cargar aulas
-      const aulasResponse = await fetch('http://localhost:3000/api/sync/aulas');
-      const aulasData = await aulasResponse.json();
-      
-      // Si la respuesta es un objeto con propiedades rutas/aulas
-      const rutasArray = Array.isArray(rutasData) ? rutasData : (rutasData.rutas || []);
-      const aulasArray = Array.isArray(aulasData) ? aulasData : (aulasData.aulas || []);
-      
-      setAulas(aulasArray);
-      
-      setRutas(rutasArray.map((r: any) => ({
-        ...r,
-        origen: aulasArray.find((a: Aula) => a.id_aula === r.origen_id),
-        destino: aulasArray.find((a: Aula) => a.id_aula === r.destino_id),
-        sincronizado: true
-      })));
+      const { data: aulasData, error: aulasError } = await supabase
+        .from('aulas')
+        .select('*');
+
+      if (aulasError) throw aulasError;
+
+      const { data: rutasData, error: rutasError } = await supabase
+        .from('rutas')
+        .select('*');
+
+      if (rutasError) throw rutasError;
+
+      setAulas(aulasData as Aula[]);
+      setRutas(
+        (rutasData as Ruta[]).map((r) => ({
+          ...r,
+          origen: (aulasData as Aula[]).find(a => a.id_aula === r.origen_id),
+          destino: (aulasData as Aula[]).find(a => a.id_aula === r.destino_id),
+          sincronizado: true
+        }))
+      );
+
     } catch (error) {
-      console.error('Error al cargar datos:', error);
-      alert('Error al cargar datos. Verifica que el servidor esté corriendo en http://localhost:3000');
+      console.error('Error al cargar datos desde Supabase:', error);
+      alert('Error al cargar datos desde Supabase');
     } finally {
       setIsLoading(false);
     }
@@ -146,18 +147,19 @@ export default function RutasView() {
 
   const cargarHorarios = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/sync/horarios');
-      const data = await response.json();
-      // ✅ Aquí data es un array, no data.horarios
-    if (Array.isArray(data)) {
-      setHorarios(data);
-    } else {
-      console.error('Formato de respuesta inesperado:', data);
+      const { data: horariosData, error: horariosError } = await supabase
+        .from('horarios')
+        .select(`
+          *,
+          aula:aulas(*)
+        `);
+
+      if (horariosError) throw horariosError;
+      setHorarios(horariosData as Horario[]);
+    } catch (error) {
+      console.error('Error al cargar horarios desde Supabase:', error);
     }
-  } catch (error) {
-    console.error('Error al cargar horarios:', error);
-  }
-};
+  };
 
   const rutasAsignadasHoy = rutas.filter(r => !r.sincronizado).length;
 
@@ -220,24 +222,26 @@ export default function RutasView() {
     };
 
     try {
-      const response = await fetch('http://localhost:3000/api/sync/rutas', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ruta: nuevaRuta })
-      });
+      const { data: rutaData, error: rutaError } = await supabase
+        .from('rutas')
+        .insert([nuevaRuta])
+        .select()
+        .single();
 
-      if (!response.ok) {
-        throw new Error('Error al crear la ruta');
-      }
+      if (rutaError) throw rutaError;
 
-      const data = await response.json();
-      const rutaCreada = { ...data.ruta, origen: origenAleatorio, destino: aulaDestino, sincronizado: false };
+      const rutaCreada = { 
+        ...rutaData, 
+        origen: origenAleatorio, 
+        destino: aulaDestino,
+        sincronizado: false 
+      };
       
       setRutas([...rutas, rutaCreada]);
       return rutaCreada;
     } catch (error) {
       console.error('Error al asignar ruta:', error);
-      alert('Error al crear la ruta en el servidor');
+      alert('Error al crear la ruta en Supabase');
       return null;
     }
   };
@@ -246,32 +250,15 @@ export default function RutasView() {
     setSyncStatus('syncing');
     
     try {
-      const response = await fetch('http://localhost:3000/api/sync/rutas', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          rutas: rutas.map(r => ({
-            id_ruta: r.id_ruta,
-            origen_id: r.origen_id,
-            destino_id: r.destino_id,
-            coordenadas: r.coordenadas,
-            distancia: r.distancia,
-            tiempo_estimado: r.tiempo_estimado,
-            ruta_optima: r.ruta_optima,
-            id_usuario: r.id_usuario
-          })),
-          timestamp: new Date().toISOString(),
-          version: "1.0.0"
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Error en la sincronización');
-      }
-
-      const data = await response.json();
-      console.log('Sincronización exitosa:', data);
+      const rutasIds = rutas.map(r => r.id_ruta);
       
+      const { error: syncError } = await supabase
+        .from('rutas')
+        .update({ sincronizado: true })
+        .in('id_ruta', rutasIds);
+
+      if (syncError) throw syncError;
+
       setRutas(rutas.map(r => ({ ...r, sincronizado: true })));
       setSyncStatus('synced');
       alert('Sincronización exitosa con la app móvil');
@@ -292,9 +279,9 @@ export default function RutasView() {
                        destinoNombre.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchEdificio =
-  selectedEdificio === 'Todos' ||
-  getCategoria(r.origen || { id_aula: 0, nombre_aula: '', ubicacion_interna: '', id_edificio: null, latitud: null, longitud: null }) === selectedEdificio ||
-  getCategoria(r.destino || { id_aula: 0, nombre_aula: '', ubicacion_interna: '', id_edificio: null, latitud: null, longitud: null }) === selectedEdificio;
+      selectedEdificio === 'Todos' ||
+      getCategoria(r.origen || { id_aula: 0, nombre_aula: '', ubicacion_interna: '', id_edificio: null, latitud: null, longitud: null }) === selectedEdificio ||
+      getCategoria(r.destino || { id_aula: 0, nombre_aula: '', ubicacion_interna: '', id_edificio: null, latitud: null, longitud: null }) === selectedEdificio;
     return matchSearch && matchEdificio;
   });
 
@@ -462,19 +449,16 @@ export default function RutasView() {
                   };
 
                   try {
-                    const response = await fetch('http://localhost:3000/api/sync/rutas', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ ruta: rutaParaCrear })
-                    });
+                    const { data: rutaData, error: rutaError } = await supabase
+                      .from('rutas')
+                      .insert([rutaParaCrear])
+                      .select()
+                      .single();
 
-                    if (!response.ok) {
-                      throw new Error('Error al crear la ruta');
-                    }
+                    if (rutaError) throw rutaError;
 
-                    const data = await response.json();
                     const rutaCreada = { 
-                      ...data.ruta, 
+                      ...rutaData, 
                       origen: aulaOrigen, 
                       destino: aulaDestino,
                       sincronizado: false 
@@ -606,112 +590,111 @@ export default function RutasView() {
               const popularidad = Math.min(100, Math.floor((ruta.distancia || 0) / 2));
               
               return (
-  <div
-    key={ruta.id_ruta}
-    className="p-6 border-l-4 rounded-xl bg-blue-50 border-blue-500"
-  >
-    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-      <div className="flex-1">
-        <div className="flex items-center gap-3 mb-3 flex-wrap">
-          <h4 className="text-lg font-bold text-slate-800">{nombreRuta}</h4>
-          <span className="px-3 py-1 bg-green-50 text-green-700 text-xs font-semibold rounded-full">
-            Activa
-          </span>
-          <span
-            className={`px-3 py-1 ${getPopularidadColor(popularidad)} text-xs font-semibold rounded-full`}
-          >
-            {popularidad}% popularidad
-          </span>
-          {!ruta.sincronizado && (
-            <span className="px-3 py-1 bg-red-50 text-red-700 text-xs font-semibold rounded-full flex items-center gap-1">
-              <RefreshCw className="w-3 h-3" />
-              Sin sincronizar
-            </span>
-          )}
-        </div>
+                <div
+                  key={ruta.id_ruta}
+                  className="p-6 border-l-4 rounded-xl bg-blue-50 border-blue-500"
+                >
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-3 flex-wrap">
+                        <h4 className="text-lg font-bold text-slate-800">{nombreRuta}</h4>
+                        <span className="px-3 py-1 bg-green-50 text-green-700 text-xs font-semibold rounded-full">
+                          Activa
+                        </span>
+                        <span
+                          className={`px-3 py-1 ${getPopularidadColor(popularidad)} text-xs font-semibold rounded-full`}
+                        >
+                          {popularidad}% popularidad
+                        </span>
+                        {!ruta.sincronizado && (
+                          <span className="px-3 py-1 bg-red-50 text-red-700 text-xs font-semibold rounded-full flex items-center gap-1">
+                            <RefreshCw className="w-3 h-3" />
+                            Sin sincronizar
+                          </span>
+                        )}
+                      </div>
 
-        {/* Barra de popularidad */}
-        <div className="flex items-center gap-4 mb-3">
-          <div className="flex-1 bg-slate-200 rounded-full h-2 max-w-xs overflow-hidden">
-            <div
-              className={`h-full ${
-                popularidad >= 80
-                  ? "bg-green-500"
-                  : popularidad >= 60
-                  ? "bg-orange-500"
-                  : "bg-slate-400"
-              } transition-all`}
-              style={{ width: `${popularidad}%` }}
-            ></div>
-          </div>
-        </div>
+                      {/* Barra de popularidad */}
+                      <div className="flex items-center gap-4 mb-3">
+                        <div className="flex-1 bg-slate-200 rounded-full h-2 max-w-xs overflow-hidden">
+                          <div
+                            className={`h-full ${
+                              popularidad >= 80
+                                ? "bg-green-500"
+                                : popularidad >= 60
+                                ? "bg-orange-500"
+                                : "bg-slate-400"
+                            } transition-all`}
+                            style={{ width: `${popularidad}%` }}
+                          ></div>
+                        </div>
+                      </div>
 
-        {/* Información de la ruta */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm text-slate-600 mb-3">
-          <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-green-500" />
-            <span className="font-medium">Desde:</span>
-            <span>{origenNombre}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-red-500" />
-            <span className="font-medium">Hasta:</span>
-            <span>{destinoNombre}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-slate-400" />
-            <span>
-              {ruta.tiempo_estimado || "-"} min • {ruta.distancia || "-"}m
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-slate-400" />
-            <span>{ruta.origen?.ubicacion_interna || "N/A"}</span>
-          </div>
-        </div>
+                      {/* Información de la ruta */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm text-slate-600 mb-3">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-green-500" />
+                          <span className="font-medium">Desde:</span>
+                          <span>{origenNombre}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-red-500" />
+                          <span className="font-medium">Hasta:</span>
+                          <span>{destinoNombre}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-slate-400" />
+                          <span>
+                            {ruta.tiempo_estimado || "-"} min • {ruta.distancia || "-"}m
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Building2 className="w-4 h-4 text-slate-400" />
+                          <span>{ruta.origen?.ubicacion_interna || "N/A"}</span>
+                        </div>
+                      </div>
 
-        {ruta.ruta_optima && (
-          <div className="mb-2 text-sm text-slate-600">
-            <span className="font-medium">Ruta óptima:</span> {ruta.ruta_optima}
-          </div>
-        )}
-      </div>
+                      {ruta.ruta_optima && (
+                        <div className="mb-2 text-sm text-slate-600">
+                          <span className="font-medium">Ruta óptima:</span> {ruta.ruta_optima}
+                        </div>
+                      )}
+                    </div>
 
-      {/* Botones de acción */}
-      <div className="flex gap-2">
-        <button
-          className="p-2 text-slate-600 hover:text-[#00B9F1] hover:bg-[#00B9F1]/10 rounded-lg transition-colors"
-          title="Ver en mapa"
-        >
-          <Map className="w-5 h-5" />
-        </button>
+                    {/* Botones de acción */}
+                    <div className="flex gap-2">
+                      <button
+                        className="p-2 text-slate-600 hover:text-[#00B9F1] hover:bg-[#00B9F1]/10 rounded-lg transition-colors"
+                        title="Ver en mapa"
+                      >
+                        <Map className="w-5 h-5" />
+                      </button>
 
-        <button
-          onClick={() => {
-            setSelectedRuta(ruta);
-            setShowEditModal(true);
-          }}
-          className="p-2 text-slate-600 hover:text-[#00B9F1] hover:bg-[#00B9F1]/10 rounded-lg transition-colors"
-          title="Editar"
-        >
-          <Edit2 className="w-5 h-5" />
-        </button>
+                      <button
+                        onClick={() => {
+                          setSelectedRuta(ruta);
+                          setShowEditModal(true);
+                        }}
+                        className="p-2 text-slate-600 hover:text-[#00B9F1] hover:bg-[#00B9F1]/10 rounded-lg transition-colors"
+                        title="Editar"
+                      >
+                        <Edit2 className="w-5 h-5" />
+                      </button>
 
-        <button
-          onClick={() => {
-            setSelectedRuta(ruta);
-            setShowDeleteModal(true);
-          }}
-          className="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-          title="Eliminar"
-        >
-          <Trash2 className="w-5 h-5" />
-        </button>
-      </div>
-    </div>
-  </div>
-);
-
+                      <button
+                        onClick={() => {
+                          setSelectedRuta(ruta);
+                          setShowDeleteModal(true);
+                        }}
+                        className="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Eliminar"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
             })}
           </div>
         ) : (
@@ -735,7 +718,6 @@ export default function RutasView() {
                   value={selectedRuta.origen_id}
                   onChange={(e) => setSelectedRuta({ ...selectedRuta, origen_id: parseInt(e.target.value) })}
                   className="mt-1 w-full border border-slate-300 rounded-lg px-3 py-2 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00B9F1]"
-
                 >
                   {aulas.map(aula => (
                     <option key={aula.id_aula} value={aula.id_aula}>
@@ -750,7 +732,6 @@ export default function RutasView() {
                   value={selectedRuta.destino_id}
                   onChange={(e) => setSelectedRuta({ ...selectedRuta, destino_id: parseInt(e.target.value) })}
                   className="mt-1 w-full border border-slate-300 rounded-lg px-3 py-2 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00B9F1]"
-
                 >
                   {aulas.map(aula => (
                     <option key={aula.id_aula} value={aula.id_aula}>
@@ -803,27 +784,26 @@ export default function RutasView() {
                   if (!selectedRuta) return;
 
                   try {
-                    const response = await fetch(`http://localhost:3000/api/sync/rutas/${selectedRuta.id_ruta}`, {
-                      method: 'PUT',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
+                    const { data: rutaData, error: rutaError } = await supabase
+                      .from('rutas')
+                      .update({
                         origen_id: selectedRuta.origen_id,
                         destino_id: selectedRuta.destino_id,
                         distancia: selectedRuta.distancia,
                         tiempo_estimado: selectedRuta.tiempo_estimado,
-                        ruta_optima: selectedRuta.ruta_optima
+                        ruta_optima: selectedRuta.ruta_optima,
+                        sincronizado: false
                       })
-                    });
+                      .eq('id_ruta', selectedRuta.id_ruta)
+                      .select()
+                      .single();
 
-                    if (!response.ok) {
-                      throw new Error('Error al actualizar la ruta');
-                    }
+                    if (rutaError) throw rutaError;
 
-                    const data = await response.json();
                     const aulaOrigen = aulas.find(a => a.id_aula === selectedRuta.origen_id);
                     const aulaDestino = aulas.find(a => a.id_aula === selectedRuta.destino_id);
                     
-                    setRutas(rutas.map(r => r.id_ruta === selectedRuta.id_ruta ? { ...data.ruta, origen: aulaOrigen, destino: aulaDestino, sincronizado: false } : r));
+                    setRutas(rutas.map(r => r.id_ruta === selectedRuta.id_ruta ? { ...rutaData, origen: aulaOrigen, destino: aulaDestino, sincronizado: false } : r));
                     setShowEditModal(false);
                     setSelectedRuta(null);
                     alert('Ruta actualizada exitosamente');
@@ -864,13 +844,12 @@ export default function RutasView() {
                   if (!selectedRuta) return;
 
                   try {
-                    const response = await fetch(`http://localhost:3000/api/sync/rutas/${selectedRuta.id_ruta}`, {
-                      method: 'DELETE'
-                    });
+                    const { error: deleteError } = await supabase
+                      .from('rutas')
+                      .delete()
+                      .eq('id_ruta', selectedRuta.id_ruta);
 
-                    if (!response.ok) {
-                      throw new Error('Error al eliminar la ruta');
-                    }
+                    if (deleteError) throw deleteError;
 
                     setRutas(rutas.filter(r => r.id_ruta !== selectedRuta.id_ruta));
                     setShowDeleteModal(false);
@@ -890,70 +869,69 @@ export default function RutasView() {
         </div>
       )}
       
-
       {/* Modal de Asignación Automática */}
       {showAsignacionModal && (
-  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-      <div className="p-6 border-b border-slate-200">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Zap className="w-6 h-6 text-orange-600" />
-            <h3 className="text-xl font-bold text-slate-800">Asignación Automática</h3>
-          </div>
-          <button 
-            onClick={() => setShowAsignacionModal(false)}
-            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5 text-black" />
-          </button>
-        </div>
-        <p className="text-slate-600 text-sm mt-2">
-          Selecciona los horarios para generar rutas automáticamente
-        </p>
-      </div>
-      <div className="p-6 space-y-3">
-        {horarios.length > 0 ? (
-          horarios.map(horario => {
-            const horaInicio = new Date(horario.hora_inicio).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
-            const horaFin = new Date(horario.hora_fin).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
-            
-            return (
-              <div key={horario.id_horario} className="p-4 border border-slate-200 rounded-xl hover:border-[#00B9F1] hover:bg-blue-50 transition-all">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-slate-800">{horario.curso}</p>
-                    <p className="text-sm text-slate-600">
-                      {horario.aula?.nombre_aula || 'Sin aula'} • {horaInicio} - {horaFin}
-                    </p>
-                    <p className="text-xs text-slate-500 mt-1">{horario.dia_semana}</p>
-                  </div>
-                  <button
-                    onClick={async () => {
-                      const nueva = await asignarRutaAutomatica(horario);
-                      if (nueva) {
-                        alert(`Ruta creada: ${nueva.origen?.nombre_aula} → ${nueva.destino?.nombre_aula}`);
-                      }
-                      setShowAsignacionModal(false);
-                    }}
-                    className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-all"
-                  >
-                    Asignar Ruta
-                  </button>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="p-6 border-b border-slate-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Zap className="w-6 h-6 text-orange-600" />
+                  <h3 className="text-xl font-bold text-slate-800">Asignación Automática</h3>
                 </div>
+                <button 
+                  onClick={() => setShowAsignacionModal(false)}
+                  className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-black" />
+                </button>
               </div>
-            );
-          })
-        ) : (
-          <div className="text-center py-8">
-            <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-600">No hay horarios disponibles</p>
+              <p className="text-slate-600 text-sm mt-2">
+                Selecciona los horarios para generar rutas automáticamente
+              </p>
+            </div>
+            <div className="p-6 space-y-3">
+              {horarios.length > 0 ? (
+                horarios.map(horario => {
+                  const horaInicio = new Date(horario.hora_inicio).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+                  const horaFin = new Date(horario.hora_fin).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+                  
+                  return (
+                    <div key={horario.id_horario} className="p-4 border border-slate-200 rounded-xl hover:border-[#00B9F1] hover:bg-blue-50 transition-all">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold text-slate-800">{horario.curso}</p>
+                          <p className="text-sm text-slate-600">
+                            {horario.aula?.nombre_aula || 'Sin aula'} • {horaInicio} - {horaFin}
+                          </p>
+                          <p className="text-xs text-slate-500 mt-1">{horario.dia_semana}</p>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            const nueva = await asignarRutaAutomatica(horario);
+                            if (nueva) {
+                              alert(`Ruta creada: ${nueva.origen?.nombre_aula} → ${nueva.destino?.nombre_aula}`);
+                            }
+                            setShowAsignacionModal(false);
+                          }}
+                          className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-all"
+                        >
+                          Asignar Ruta
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="text-center py-8">
+                  <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                  <p className="text-slate-600">No hay horarios disponibles</p>
+                </div>
+              )}
+            </div>
           </div>
-        )}
-       </div>
+        </div>
+      )}
     </div>
-  </div>
-)}
-</div>
-);
+  );
 }
