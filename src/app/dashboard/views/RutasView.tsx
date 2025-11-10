@@ -116,13 +116,13 @@ export default function RutasView() {
     setIsLoading(true);
     try {
       const { data: aulasData, error: aulasError } = await supabase
-        .from('aulas')
+        .from('Aula')
         .select('*');
 
       if (aulasError) throw aulasError;
 
       const { data: rutasData, error: rutasError } = await supabase
-        .from('rutas')
+        .from('Ruta')
         .select('*');
 
       if (rutasError) throw rutasError;
@@ -148,7 +148,7 @@ export default function RutasView() {
   const cargarHorarios = async () => {
     try {
       const { data: horariosData, error: horariosError } = await supabase
-        .from('horarios')
+        .from('Horario')
         .select(`
           *,
           aula:aulas(*)
