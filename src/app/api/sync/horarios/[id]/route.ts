@@ -12,11 +12,14 @@ if (process.env.NODE_ENV === 'production') {
   prisma = (global as any).prisma;
 }
 
-// GET → obtener un horario por ID
+// Definimos un tipo explícito para los params de la ruta
+type RouteParams = { params: { id: string } };
+
+// ✅ GET → obtener un horario por ID
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+  { params }: RouteParams
+): Promise<NextResponse> {
   try {
     const id = parseInt(params.id);
     const horario = await prisma.horario.findUnique({
@@ -40,11 +43,11 @@ export async function GET(
   }
 }
 
-// PUT → actualizar un horario
+// ✏️ PUT → actualizar un horario
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+  { params }: RouteParams
+): Promise<NextResponse> {
   try {
     const id = parseInt(params.id);
     const body = await req.json();
@@ -70,11 +73,11 @@ export async function PUT(
   }
 }
 
-// DELETE → eliminar un horario
+// 🗑️ DELETE → eliminar un horario
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+  { params }: RouteParams
+): Promise<NextResponse> {
   try {
     const id = parseInt(params.id);
     await prisma.horario.delete({
