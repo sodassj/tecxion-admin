@@ -12,16 +12,18 @@ if (process.env.NODE_ENV === 'production') {
   prisma = (global as any).prisma;
 }
 
-// Definimos un tipo explícito para los params de la ruta
-type RouteParams = { params: { id: string } };
+// Función auxiliar para obtener el id desde la URL
+function getIdFromReq(req: NextRequest): number {
+  // /api/sync/horarios/[id] → extraemos [id] de la URL
+  const urlParts = req.nextUrl.pathname.split('/');
+  const idStr = urlParts[urlParts.length - 1];
+  return parseInt(idStr);
+}
 
 // ✅ GET → obtener un horario por ID
-export async function GET(
-  _req: NextRequest,
-  { params }: RouteParams
-): Promise<NextResponse> {
+export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
-    const id = parseInt(params.id);
+    const id = getIdFromReq(req);
     const horario = await prisma.horario.findUnique({
       where: { id_horario: id },
       include: {
@@ -44,12 +46,9 @@ export async function GET(
 }
 
 // ✏️ PUT → actualizar un horario
-export async function PUT(
-  req: NextRequest,
-  { params }: RouteParams
-): Promise<NextResponse> {
+export async function PUT(req: NextRequest): Promise<NextResponse> {
   try {
-    const id = parseInt(params.id);
+    const id = getIdFromReq(req);
     const body = await req.json();
 
     const horarioActualizado = await prisma.horario.update({
@@ -74,12 +73,9 @@ export async function PUT(
 }
 
 // 🗑️ DELETE → eliminar un horario
-export async function DELETE(
-  _req: NextRequest,
-  { params }: RouteParams
-): Promise<NextResponse> {
+export async function DELETE(req: NextRequest): Promise<NextResponse> {
   try {
-    const id = parseInt(params.id);
+    const id = getIdFromReq(req);
     await prisma.horario.delete({
       where: { id_horario: id },
     });
