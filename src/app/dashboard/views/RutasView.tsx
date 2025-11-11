@@ -223,7 +223,7 @@ export default function RutasView() {
 
     try {
       const { data: rutaData, error: rutaError } = await supabase
-        .from('rutas')
+        .from('Ruta')
         .insert([nuevaRuta])
         .select()
         .single();
@@ -253,7 +253,7 @@ export default function RutasView() {
       const rutasIds = rutas.map(r => r.id_ruta);
       
       const { error: syncError } = await supabase
-        .from('rutas')
+        .from('Ruta')
         .update({ sincronizado: true })
         .in('id_ruta', rutasIds);
 
@@ -450,7 +450,7 @@ export default function RutasView() {
 
                   try {
                     const { data: rutaData, error: rutaError } = await supabase
-                      .from('rutas')
+                      .from('Ruta')
                       .insert([rutaParaCrear])
                       .select()
                       .single();
@@ -785,14 +785,13 @@ export default function RutasView() {
 
                   try {
                     const { data: rutaData, error: rutaError } = await supabase
-                      .from('rutas')
+                      .from('Ruta')
                       .update({
                         origen_id: selectedRuta.origen_id,
                         destino_id: selectedRuta.destino_id,
                         distancia: selectedRuta.distancia,
                         tiempo_estimado: selectedRuta.tiempo_estimado,
                         ruta_optima: selectedRuta.ruta_optima,
-                        sincronizado: false
                       })
                       .eq('id_ruta', selectedRuta.id_ruta)
                       .select()
@@ -845,7 +844,7 @@ export default function RutasView() {
 
                   try {
                     const { error: deleteError } = await supabase
-                      .from('rutas')
+                      .from('Ruta')
                       .delete()
                       .eq('id_ruta', selectedRuta.id_ruta);
 

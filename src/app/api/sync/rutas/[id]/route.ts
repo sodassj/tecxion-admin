@@ -13,9 +13,9 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // ✅ PUT: actualizar una ruta existente
-export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
-  const { id } = await context.params;
-  const routeId = Number(id);
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+  const routeId = Number(params.id);
+
   if (isNaN(routeId)) {
     return NextResponse.json({ error: 'ID inválido' }, { status: 400 });
   }
@@ -38,6 +38,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
 
     return NextResponse.json({ ruta: updated });
   } catch (e) {
+    console.error('❌ Error al actualizar la ruta:', e);
     return NextResponse.json(
       { error: 'Error al actualizar la ruta', details: (e as Error).message },
       { status: 400 }
@@ -46,17 +47,18 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
 }
 
 // ✅ DELETE: eliminar una ruta por ID
-export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
-  const { id } = await context.params;
-  const routeId = Number(id);
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const routeId = Number(params.id);
+
   if (isNaN(routeId)) {
     return NextResponse.json({ error: 'ID inválido' }, { status: 400 });
   }
 
   try {
     await prisma.ruta.delete({ where: { id_ruta: routeId } });
-    return NextResponse.json({ message: `Ruta ${id} eliminada correctamente` });
+    return NextResponse.json({ message: `Ruta ${params.id} eliminada correctamente` });
   } catch (e) {
+    console.error('❌ Error al eliminar la ruta:', e);
     return NextResponse.json(
       { error: 'Error al eliminar la ruta', details: (e as Error).message },
       { status: 400 }
