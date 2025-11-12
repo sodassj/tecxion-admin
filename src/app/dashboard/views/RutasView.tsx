@@ -247,27 +247,38 @@ export default function RutasView() {
   };
 
   const sincronizarConFlutter = async () => {
-    setSyncStatus('syncing');
-    
-    try {
-      const rutasIds = rutas.map(r => r.id_ruta);
-      
-      const { error: syncError } = await supabase
-        .from('Ruta')
-        .update({ sincronizado: true })
-        .in('id_ruta', rutasIds);
+  setSyncStatus('syncing');
 
-      if (syncError) throw syncError;
-
-      setRutas(rutas.map(r => ({ ...r, sincronizado: true })));
+  try {
+    // Verifica si todas las rutas ya están sincronizadas
+    const allSynced = rutas.every(r => r.sincronizado);
+    if (allSynced) {
+      alert('¡Todas las rutas ya están sincronizadas!');
       setSyncStatus('synced');
-      alert('Sincronización exitosa con la app móvil');
-    } catch (error) {
-      console.error('Error en sincronización:', error);
-      setSyncStatus('error');
-      alert('Error al sincronizar. Verifica tu conexión.');
+      return;
     }
-  };
+
+    // Obtiene solo las rutas que aún no están sincronizadas
+    const rutasIds = rutas.filter(r => !r.sincronizado).map(r => r.id_ruta);
+
+    const { error: syncError } = await supabase
+      .from('Ruta')
+      .update({ sincronizado: true })
+      .in('id_ruta', rutasIds);
+
+    if (syncError) throw syncError;
+
+    // Actualiza el estado local
+    setRutas(rutas.map(r => ({ ...r, sincronizado: true })));
+    setSyncStatus('synced');
+
+    alert('¡Rutas sincronizadas correctamente!');
+  } catch (err: any) {
+    console.error('Error en sincronización:', err.message || err);
+    setSyncStatus('error');
+    alert('Ocurrió un error al sincronizar. Intenta nuevamente.');
+  }
+};
 
   const rutasFiltradas = rutas.filter(r => {
     const origenNombre = r.origen?.nombre_aula || '';

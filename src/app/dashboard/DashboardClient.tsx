@@ -45,14 +45,12 @@ export default function DashboardClient({ children }: { children: React.ReactNod
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [userName, setUserName] = useState<string | null>(null);
-  const [notifications] = useState(3);
   const [systemStatus] = useState<SystemStatus>({
     online: true,
     activeBeacons: 47,
     totalBeacons: 50
   });
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-
   const router = useRouter();
   const pathname = usePathname();
 
@@ -143,8 +141,10 @@ export default function DashboardClient({ children }: { children: React.ReactNod
   // Nombre corto del usuario
   const shortUserName = useMemo(() => {
     if (!userName) return 'Admin';
-    const firstName = userName.split(' ')[0];
-    return `Admin ${firstName}`;
+    const names = userName.split(' ').filter(n => n);
+    const firstName = names[0];
+     const firstLastName = names.length > 1 ? names[names.length - 2] : '';
+  return `Admin ${firstName} ${firstLastName}`.trim();
   }, [userName]);
 
   // Porcentaje de beacons activos
@@ -208,21 +208,7 @@ export default function DashboardClient({ children }: { children: React.ReactNod
               </div>
               
               <div className="flex items-center space-x-4">
-                {/* Notificaciones */}
-                <button 
-                  className="relative p-2 text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-200 group"
-                  aria-label="Notificaciones"
-                >
-                  <Bell className="w-5 h-5" />
-                  {notifications > 0 && (
-                    <>
-                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-[#00B9F1] rounded-full flex items-center justify-center">
-                        <span className="text-[10px] text-white font-bold">{notifications}</span>
-                      </div>
-                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-[#00B9F1] rounded-full animate-ping opacity-75"></div>
-                    </>
-                  )}
-                </button>
+                
                 
                 {/* Usuario desktop */}
                 <div className="hidden sm:flex items-center space-x-3 px-3 py-2 rounded-xl hover:bg-white/10 transition-all duration-200 cursor-pointer">
@@ -341,35 +327,6 @@ export default function DashboardClient({ children }: { children: React.ReactNod
             })}
           </nav>
         </div>
-
-        {/* Estado del sistema (expandido) */}
-        {!sidebarCollapsed && (
-          <div className="absolute bottom-24 left-4 right-4">
-            <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-4 border border-slate-200 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-slate-700">Estado del Sistema</span>
-                <div className="flex items-center">
-                  <div className={`w-2 h-2 rounded-full mr-2 animate-pulse ${systemStatus.online ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                  <span className={`text-xs font-bold ${systemStatus.online ? 'text-green-600' : 'text-red-600'}`}>
-                    {systemStatus.online ? 'Online' : 'Offline'}
-                  </span>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs text-slate-600">
-                  <span>Beacons Activos</span>
-                  <span className="font-semibold">{systemStatus.activeBeacons}/{systemStatus.totalBeacons}</span>
-                </div>
-                <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                  <div 
-                    className="bg-gradient-to-r from-[#00B9F1] to-cyan-500 h-full rounded-full transition-all duration-500"
-                    style={{ width: `${beaconPercentage}%` }}
-                  ></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Botón cerrar sesión (expandido) */}
         {!sidebarCollapsed && (
