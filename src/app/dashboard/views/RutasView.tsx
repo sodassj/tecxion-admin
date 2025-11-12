@@ -151,7 +151,7 @@ export default function RutasView() {
         .from('Horario')
         .select(`
           *,
-          aula:aulas(*)
+          aula:Aula(*)
         `);
 
       if (horariosError) throw horariosError;
