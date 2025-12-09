@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
+
 let prisma: PrismaClient;
 
 if (process.env.NODE_ENV === 'production') {
@@ -12,21 +13,34 @@ if (process.env.NODE_ENV === 'production') {
   prisma = (global as any).prisma;
 }
 
-// GET: obtener todas las rutas
+// 🔹 GET: obtener todas las rutas con coordenadas como array
 export async function GET() {
   try {
     const rutas = await prisma.ruta.findMany({
       include: {
-        origen: {
-          select: { id_aula: true, nombre_aula: true },
-        },
-        destino: {
-          select: { id_aula: true, nombre_aula: true },
-        },
+        origen: { select: { id_aula: true, nombre_aula: true, latitud: true, longitud: true } },
+        destino: { select: { id_aula: true, nombre_aula: true, latitud: true, longitud: true } },
       },
     });
 
-    return NextResponse.json(rutas);
+    // Transformar coordenadas para que siempre sean un array de puntos
+    const rutasConCoordenadas = rutas.map((r: any & { origen: any; destino: any }) => {
+  let coords = r.coordenadas;
+
+  if (!coords || coords.length === 0) {
+    coords = [
+      { lat: r.origen.latitud, lng: r.origen.longitud },
+      { lat: r.destino.latitud, lng: r.destino.longitud },
+    ];
+  }
+
+  return {
+    ...r,
+    coordenadas: coords,
+  };
+});
+
+    return NextResponse.json(rutasConCoordenadas);
   } catch (e) {
     return NextResponse.json(
       { error: 'Error al obtener rutas', details: (e as Error).message },
@@ -35,20 +49,15 @@ export async function GET() {
   }
 }
 
-// POST: crear una nueva ruta
+// 🔹 POST: crear una nueva ruta con coordenadas como array
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json();
+    const rutas = Array.isArray(data) ? data : data.ruta ? [data.ruta] : [data];
 
-    // Soporte para { ruta: {...} } o [{...}]
-    const rutas = Array.isArray(data)
-      ? data
-      : data.ruta
-      ? [data.ruta]
-      : [data];
+    const rutasParaGuardar = [];
 
     for (const ruta of rutas) {
-      // Validación obligatoria
       if (!ruta.origen_id || !ruta.destino_id) {
         return NextResponse.json(
           { error: 'origen_id y destino_id son obligatorios' },
@@ -56,39 +65,52 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // 🔹 Cambio principal: si no hay coordenadas, generarlas desde origen y destino
-      if (!ruta.coordenadas || (Array.isArray(ruta.coordenadas) && ruta.coordenadas.length === 0)) {
-        // Asegúrate que envías también lat/lng de origen y destino
-        if (ruta.origen && ruta.destino) {
-          ruta.coordenadas = [
-            { lat: ruta.origen.lat, lng: ruta.origen.lng },
-            { lat: ruta.destino.lat, lng: ruta.destino.lng }
+      // 🔹 Si no vienen coordenadas, generar desde IDs de aulas
+      let coords = ruta.coordenadas;
+      if (!coords || coords.length === 0) {
+        const origenAula = await prisma.aula.findUnique({ where: { id_aula: ruta.origen_id } });
+        const destinoAula = await prisma.aula.findUnique({ where: { id_aula: ruta.destino_id } });
+
+        if (origenAula && destinoAula) {
+          coords = [
+            { lat: origenAula.latitud, lng: origenAula.longitud },
+            { lat: destinoAula.latitud, lng: destinoAula.longitud },
           ];
         } else {
-          ruta.coordenadas = []; // fallback por si no vienen coordenadas
+          coords = [];
         }
       }
+
+      rutasParaGuardar.push({
+        origen_id: ruta.origen_id,
+        destino_id: ruta.destino_id,
+        coordenadas: coords,
+        distancia: ruta.distancia || null,
+        tiempo_estimado: ruta.tiempo_estimado || null,
+        ruta_optima: ruta.ruta_optima || null,
+        id_usuario: ruta.id_usuario || null,
+      });
     }
 
     const result = await prisma.ruta.createMany({
-      data: rutas.map(r => ({
-        origen_id: r.origen_id,
-        destino_id: r.destino_id,
-        coordenadas: r.coordenadas, // ahora siempre será un array
-        distancia: r.distancia || null,
-        tiempo_estimado: r.tiempo_estimado || null,
-        ruta_optima: r.ruta_optima || null,
-        id_usuario: r.id_usuario || null,
-      })),
+      data: rutasParaGuardar,
     });
 
     const ultimaRuta = await prisma.ruta.findFirst({
       orderBy: { id_ruta: 'desc' },
       include: {
-        origen: { select: { id_aula: true, nombre_aula: true } },
-        destino: { select: { id_aula: true, nombre_aula: true } },
+        origen: { select: { id_aula: true, nombre_aula: true, latitud: true, longitud: true } },
+        destino: { select: { id_aula: true, nombre_aula: true, latitud: true, longitud: true } },
       },
     });
+
+    // Asegurarse que coordenadas devueltas sean array
+    if (ultimaRuta && (!ultimaRuta.coordenadas || ultimaRuta.coordenadas.length === 0)) {
+      ultimaRuta.coordenadas = [
+        { lat: ultimaRuta.origen.latitud, lng: ultimaRuta.origen.longitud },
+        { lat: ultimaRuta.destino.latitud, lng: ultimaRuta.destino.longitud },
+      ];
+    }
 
     return NextResponse.json({ rutasCreadas: result.count, ruta: ultimaRuta });
   } catch (e) {
@@ -98,4 +120,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-
