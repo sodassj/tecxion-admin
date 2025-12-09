@@ -146,7 +146,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     console.log('📦 Body recibido:', body);
 
-    const { tipo, usuario, email, calificacion, comentario, id_usuario } = body;
+    const { tipo, usuario, email, calificacion, comentario } = body;
 
     // Validaciones
     if (!comentario) {
@@ -166,14 +166,31 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log('✅ Creando reporte en BD...');
+    // 🔹 Buscar usuario por email en la base de datos
+    let idUsuario = null;
+    if (email) {
+      console.log('🔍 Buscando usuario con email:', email);
+      const usuarioEncontrado = await prisma.usuario.findUnique({
+        where: { correo: email },
+        select: { id_usuario: true, nombre: true, apellido: true }
+      });
+      
+      if (usuarioEncontrado) {
+        idUsuario = usuarioEncontrado.id_usuario;
+        console.log('✅ Usuario encontrado con ID:', idUsuario);
+      } else {
+        console.log('⚠️ No se encontró usuario con ese email');
+      }
+    }
+
+    console.log('✅ Creando reporte en BD con id_usuario:', idUsuario);
     
-    // Crear nuevo reporte
+    // Crear nuevo reporte con el id_usuario encontrado
     const nuevoReporte = await prisma.reporteUsuario.create({
       data: {
         descripcion: comentario,
         tipo: tipoValido,
-        id_usuario: id_usuario || null,
+        id_usuario: idUsuario, // 👈 Ahora será el ID correcto o null si no se encontró
       },
       include: {
         usuario: {
