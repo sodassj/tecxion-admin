@@ -47,22 +47,34 @@ export async function POST(req: NextRequest) {
       ? [data.ruta]
       : [data];
 
-    // Validación mínima
     for (const ruta of rutas) {
-      if (!ruta.origen_id || !ruta.destino_id || !ruta.coordenadas) {
+      // Validación obligatoria
+      if (!ruta.origen_id || !ruta.destino_id) {
         return NextResponse.json(
-          { error: 'origen_id, destino_id y coordenadas son obligatorios' },
+          { error: 'origen_id y destino_id son obligatorios' },
           { status: 400 }
         );
       }
+
+      // 🔹 Cambio principal: si no hay coordenadas, generarlas desde origen y destino
+      if (!ruta.coordenadas || (Array.isArray(ruta.coordenadas) && ruta.coordenadas.length === 0)) {
+        // Asegúrate que envías también lat/lng de origen y destino
+        if (ruta.origen && ruta.destino) {
+          ruta.coordenadas = [
+            { lat: ruta.origen.lat, lng: ruta.origen.lng },
+            { lat: ruta.destino.lat, lng: ruta.destino.lng }
+          ];
+        } else {
+          ruta.coordenadas = []; // fallback por si no vienen coordenadas
+        }
+      }
     }
 
-    // Crear rutas con createMany
     const result = await prisma.ruta.createMany({
       data: rutas.map(r => ({
         origen_id: r.origen_id,
         destino_id: r.destino_id,
-        coordenadas: r.coordenadas,
+        coordenadas: r.coordenadas, // ahora siempre será un array
         distancia: r.distancia || null,
         tiempo_estimado: r.tiempo_estimado || null,
         ruta_optima: r.ruta_optima || null,
@@ -70,16 +82,11 @@ export async function POST(req: NextRequest) {
       })),
     });
 
-    // Obtener la última ruta creada con nombres de origen y destino
     const ultimaRuta = await prisma.ruta.findFirst({
       orderBy: { id_ruta: 'desc' },
       include: {
-        origen: {
-          select: { id_aula: true, nombre_aula: true },
-        },
-        destino: {
-          select: { id_aula: true, nombre_aula: true },
-        },
+        origen: { select: { id_aula: true, nombre_aula: true } },
+        destino: { select: { id_aula: true, nombre_aula: true } },
       },
     });
 
@@ -91,3 +98,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
