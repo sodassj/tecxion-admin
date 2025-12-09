@@ -47,7 +47,8 @@ export async function GET(req: NextRequest) {
           select: {
             id_usuario: true,
             nombre: true,
-            email: true,
+            apellido: true,
+            correo: true,
           }
         }
       },
@@ -56,10 +57,10 @@ export async function GET(req: NextRequest) {
       }
     });
 
-    // Filtrar por email si se proporciona
+    // Filtrar por email/correo si se proporciona
     let filteredReportes = reportes;
     if (email) {
-      filteredReportes = reportes.filter((r: typeof reportes[0]) => r.usuario?.email === email);
+      filteredReportes = reportes.filter((r: typeof reportes[0]) => r.usuario?.correo === email);
     }
 
     // Calcular estadísticas
@@ -73,10 +74,12 @@ export async function GET(req: NextRequest) {
 
     // Formatear datos para el frontend
     const formattedData = filteredReportes.map((item: typeof reportes[0]) => {
-      const usuario = item.usuario?.nombre || 'Usuario Anónimo';
-      const userEmail = item.usuario?.email || 'sin-email@tecsup.edu.pe';
+      const nombreCompleto = item.usuario 
+        ? `${item.usuario.nombre} ${item.usuario.apellido}`.trim()
+        : 'Usuario Anónimo';
+      const userEmail = item.usuario?.correo || 'sin-email@tecsup.edu.pe';
       
-      const avatar = usuario
+      const avatar = nombreCompleto
         .split(' ')
         .map((word: string) => word[0])
         .join('')
@@ -103,7 +106,7 @@ export async function GET(req: NextRequest) {
       return {
         id_feedback: item.id_reporte_usuario,
         tipo: item.tipo || 'comentario',
-        usuario: usuario,
+        usuario: nombreCompleto,
         email: userEmail,
         avatar: avatar,
         fecha: item.fecha_envio.toISOString().slice(0, 16).replace('T', ' '),
@@ -177,7 +180,8 @@ export async function POST(req: NextRequest) {
           select: {
             id_usuario: true,
             nombre: true,
-            email: true,
+            apellido: true,
+            correo: true,
           }
         }
       }
@@ -186,8 +190,11 @@ export async function POST(req: NextRequest) {
     console.log('✅ Reporte creado con ID:', nuevoReporte.id_reporte_usuario);
 
     // Generar avatar
-    const nombreUsuario = nuevoReporte.usuario?.nombre || usuario || 'Usuario Anónimo';
-    const avatar = nombreUsuario
+    const nombreCompleto = nuevoReporte.usuario 
+      ? `${nuevoReporte.usuario.nombre} ${nuevoReporte.usuario.apellido}`.trim()
+      : usuario || 'Usuario Anónimo';
+    
+    const avatar = nombreCompleto
       .split(' ')
       .map((word: string) => word[0])
       .join('')
@@ -200,8 +207,8 @@ export async function POST(req: NextRequest) {
       data: {
         id_feedback: nuevoReporte.id_reporte_usuario,
         tipo: nuevoReporte.tipo,
-        usuario: nombreUsuario,
-        email: nuevoReporte.usuario?.email || email,
+        usuario: nombreCompleto,
+        email: nuevoReporte.usuario?.correo || email || 'sin-email@tecsup.edu.pe',
         avatar: avatar,
         fecha: nuevoReporte.fecha_envio.toISOString().slice(0, 16).replace('T', ' '),
         calificacion: calificacion || 4,
@@ -282,7 +289,8 @@ export async function PATCH(req: NextRequest) {
           select: {
             id_usuario: true,
             nombre: true,
-            email: true,
+            apellido: true,
+            correo: true,
           }
         }
       }
