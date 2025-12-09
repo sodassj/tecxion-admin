@@ -12,6 +12,7 @@ if (process.env.NODE_ENV === 'production') {
   prisma = (global as any).prisma;
 }
 
+// 🔥 Tipo corregido para coincidir con Prisma
 type RutaConRelaciones = {
   id_ruta: number;
   origen_id: number;
@@ -21,8 +22,18 @@ type RutaConRelaciones = {
   tiempo_estimado: number | null;
   ruta_optima: string | null;
   id_usuario?: number | null;
-  origen: { id_aula: number; nombre_aula: string; latitud: number; longitud: number };
-  destino: { id_aula: number; nombre_aula: string; latitud: number; longitud: number };
+  origen: { 
+    id_aula: number; 
+    nombre_aula: string; 
+    latitud: number | null;  // 🔥 Cambiado a null
+    longitud: number | null; // 🔥 Cambiado a null
+  };
+  destino: { 
+    id_aula: number; 
+    nombre_aula: string; 
+    latitud: number | null;  // 🔥 Cambiado a null
+    longitud: number | null; // 🔥 Cambiado a null
+  };
 };
 
 // 🔥 Función para normalizar coordenadas a formato array
@@ -60,7 +71,8 @@ export async function GET() {
       },
     });
 
-    const rutasNormalizadas = rutas.map((r: RutaConRelaciones) => ({
+    // 🔥 Mapear con el tipo correcto
+    const rutasNormalizadas = rutas.map((r: typeof rutas[0]) => ({
       ...r,
       coordenadas: normalizarCoordenadas(r.coordenadas, r.origen, r.destino)
     }));
