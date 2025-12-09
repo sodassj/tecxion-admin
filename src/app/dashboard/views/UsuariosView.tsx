@@ -1,6 +1,6 @@
 'use client';
-import React, { useState } from 'react';
-import { Users, Search, Filter, UserPlus, MoreVertical, Mail, Phone, MapPin, Shield, Activity, Download, Edit2, Trash2, MessageSquare, Star, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Users, Search, Filter, UserPlus, MoreVertical, Mail, Phone, MapPin, Shield, Activity, Download, Edit2, Trash2, MessageSquare, Star, CheckCircle, Clock, AlertCircle, RefreshCw } from 'lucide-react';
 
 export default function UsuariosView() {
   const [activeTab, setActiveTab] = useState<'usuarios' | 'feedback'>('usuarios');
@@ -8,7 +8,13 @@ export default function UsuariosView() {
   const [filterRole, setFilterRole] = useState('todos');
   const [filterFeedbackType, setFilterFeedbackType] = useState('todos');
   const [filterFeedbackStatus, setFilterFeedbackStatus] = useState('todos');
+  
+  // Estados para datos dinámicos
+  const [feedbackData, setFeedbackData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  // Usuarios hardcodeados (mantener por ahora)
   const usuarios = [
     {
       id: 1,
@@ -45,107 +51,35 @@ export default function UsuariosView() {
       ultimaConexion: "Hace 2 días",
       rutasGeneradas: 45,
       avatar: "JR"
-    },
-    {
-      id: 4,
-      nombre: "Ana Gutiérrez",
-      email: "ana.gutierrez@tecsup.edu.pe",
-      telefono: "+51 987 654 324",
-      rol: "Administrador",
-      carrera: "TI",
-      estado: "Activo",
-      ultimaConexion: "Hace 1 hora",
-      rutasGeneradas: 234,
-      avatar: "AG"
-    },
-    {
-      id: 5,
-      nombre: "Luis Paredes",
-      email: "luis.paredes@tecsup.edu.pe",
-      telefono: "+51 987 654 325",
-      rol: "Estudiante",
-      carrera: "Automatización",
-      estado: "Activo",
-      ultimaConexion: "Hace 30 min",
-      rutasGeneradas: 78,
-      avatar: "LP"
     }
   ];
 
-  const feedbackData = [
-    {
-      id: 1,
-      tipo: 'error',
-      usuario: 'Carlos Mendoza',
-      email: 'carlos.mendoza@tecsup.edu.pe',
-      avatar: 'CM',
-      fecha: '2025-01-15 10:30',
-      calificacion: 3,
-      comentario: 'La ruta a Lab 301 no se carga correctamente en el mapa. He intentado varias veces y siempre muestra un error de "coordenadas no disponibles".',
-      estado: 'pendiente',
-      prioridad: 'alta'
-    },
-    {
-      id: 2,
-      tipo: 'sugerencia',
-      usuario: 'María Torres',
-      email: 'maria.torres@tecsup.edu.pe',
-      avatar: 'MT',
-      fecha: '2025-01-15 09:15',
-      calificacion: 5,
-      comentario: 'Sería genial poder guardar rutas favoritas para acceso rápido. Como docente, siempre voy a los mismos salones y esto me ahorraría mucho tiempo.',
-      estado: 'en_revision',
-      prioridad: 'media'
-    },
-    {
-      id: 3,
-      tipo: 'comentario',
-      usuario: 'Jorge Ramírez',
-      email: 'jorge.ramirez@tecsup.edu.pe',
-      avatar: 'JR',
-      fecha: '2025-01-14 16:45',
-      calificacion: 4,
-      comentario: 'La app es muy útil para encontrar las aulas, pero el tiempo de carga inicial es un poco lento. ¿Podrían optimizarlo?',
-      estado: 'resuelto',
-      prioridad: 'baja'
-    },
-    {
-      id: 4,
-      tipo: 'error',
-      usuario: 'Luis Paredes',
-      email: 'luis.paredes@tecsup.edu.pe',
-      avatar: 'LP',
-      fecha: '2025-01-14 14:20',
-      calificacion: 2,
-      comentario: 'No puedo iniciar sesión con mi cuenta institucional. Me dice "credenciales inválidas" aunque estoy seguro de que son correctas.',
-      estado: 'pendiente',
-      prioridad: 'alta'
-    },
-    {
-      id: 5,
-      tipo: 'sugerencia',
-      usuario: 'Ana Gutiérrez',
-      email: 'ana.gutierrez@tecsup.edu.pe',
-      avatar: 'AG',
-      fecha: '2025-01-13 11:00',
-      calificacion: 5,
-      comentario: 'Me encantaría que hubiera notificaciones push cuando estoy cerca de mi próxima clase. Sería súper útil para no llegar tarde.',
-      estado: 'en_revision',
-      prioridad: 'media'
-    },
-    {
-      id: 6,
-      tipo: 'comentario',
-      usuario: 'Carlos Mendoza',
-      email: 'carlos.mendoza@tecsup.edu.pe',
-      avatar: 'CM',
-      fecha: '2025-01-12 15:30',
-      calificacion: 5,
-      comentario: 'Excelente aplicación. Me ha ayudado mucho a encontrar las aulas en mi primer semestre. ¡Gracias al equipo de desarrollo!',
-      estado: 'resuelto',
-      prioridad: 'baja'
+  // Cargar feedback desde la API
+  const fetchFeedback = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/sync/feedback');
+      const data = await response.json();
+      
+      if (data.success) {
+        setFeedbackData(data.data);
+        console.log('✅ Feedback cargado:', data.data.length, 'items');
+      } else {
+        setError(data.error || 'Error al cargar feedback');
+      }
+    } catch (e) {
+      console.error('Error al cargar feedback:', e);
+      setError('Error de conexión al cargar feedback');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  // Cargar datos al montar el componente
+  useEffect(() => {
+    fetchFeedback();
+  }, []);
 
   const stats = [
     { label: "Total Usuarios", value: "1,247", icon: Users, color: "bg-blue-500" },
@@ -155,10 +89,30 @@ export default function UsuariosView() {
   ];
 
   const feedbackStats = [
-    { label: "Total Feedback", value: feedbackData.length.toString(), icon: MessageSquare, color: "bg-blue-500" },
-    { label: "Pendientes", value: feedbackData.filter(f => f.estado === 'pendiente').length.toString(), icon: Clock, color: "bg-orange-500" },
-    { label: "En Revisión", value: feedbackData.filter(f => f.estado === 'en_revision').length.toString(), icon: AlertCircle, color: "bg-yellow-500" },
-    { label: "Resueltos", value: feedbackData.filter(f => f.estado === 'resuelto').length.toString(), icon: CheckCircle, color: "bg-green-500" }
+    { 
+      label: "Total Feedback", 
+      value: feedbackData.length.toString(), 
+      icon: MessageSquare, 
+      color: "bg-blue-500" 
+    },
+    { 
+      label: "Pendientes", 
+      value: feedbackData.filter(f => f.estado === 'pendiente').length.toString(), 
+      icon: Clock, 
+      color: "bg-orange-500" 
+    },
+    { 
+      label: "En Revisión", 
+      value: feedbackData.filter(f => f.estado === 'en_revision').length.toString(), 
+      icon: AlertCircle, 
+      color: "bg-yellow-500" 
+    },
+    { 
+      label: "Resueltos", 
+      value: feedbackData.filter(f => f.estado === 'resuelto').length.toString(), 
+      icon: CheckCircle, 
+      color: "bg-green-500" 
+    }
   ];
 
   const filteredUsuarios = usuarios.filter(usuario => {
@@ -203,7 +157,9 @@ export default function UsuariosView() {
     return colors[prioridad as keyof typeof colors] || 'bg-gray-500';
   };
 
-  const promedioCalificacion = (feedbackData.reduce((acc, f) => acc + f.calificacion, 0) / feedbackData.length).toFixed(1);
+  const promedioCalificacion = feedbackData.length > 0 
+    ? (feedbackData.reduce((acc, f) => acc + f.calificacion, 0) / feedbackData.length).toFixed(1)
+    : '0.0';
 
   return (
     <div className="space-y-6">
@@ -216,11 +172,29 @@ export default function UsuariosView() {
           </h1>
           <p className="text-slate-600 mt-1">Administra usuarios y revisa el feedback del sistema</p>
         </div>
-        <button className="flex items-center px-6 py-3 bg-[#00B9F1] hover:bg-[#0099CC] text-white rounded-xl font-medium transition-all hover:scale-105 shadow-lg shadow-[#00B9F1]/30">
-          <UserPlus className="w-5 h-5 mr-2" />
-          Nuevo Usuario
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={fetchFeedback}
+            className="flex items-center px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-medium transition-all"
+            disabled={loading}
+          >
+            <RefreshCw className={`w-5 h-5 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Actualizar
+          </button>
+          <button className="flex items-center px-6 py-3 bg-[#00B9F1] hover:bg-[#0099CC] text-white rounded-xl font-medium transition-all hover:scale-105 shadow-lg shadow-[#00B9F1]/30">
+            <UserPlus className="w-5 h-5 mr-2" />
+            Nuevo Usuario
+          </button>
+        </div>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600" />
+          <p className="text-red-800">{error}</p>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="bg-white/70 backdrop-blur-sm border border-slate-200 rounded-xl p-2 flex gap-2">
@@ -400,7 +374,7 @@ export default function UsuariosView() {
             {/* Pagination */}
             <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-between">
               <div className="text-sm text-slate-600">
-                Mostrando <span className="font-medium">1-5</span> de <span className="font-medium">1,247</span> usuarios
+                Mostrando <span className="font-medium">1-{filteredUsuarios.length}</span> de <span className="font-medium">{usuarios.length}</span> usuarios
               </div>
               <div className="flex gap-2">
                 <button className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-600 hover:bg-white transition-colors">
@@ -456,124 +430,145 @@ export default function UsuariosView() {
             </div>
           </div>
 
+          {/* Loading State */}
+          {loading && (
+            <div className="flex items-center justify-center py-12">
+              <RefreshCw className="w-8 h-8 text-[#00B9F1] animate-spin" />
+              <span className="ml-3 text-slate-600">Cargando feedback...</span>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!loading && feedbackData.length === 0 && (
+            <div className="bg-white/70 backdrop-blur-sm border border-slate-200 rounded-xl p-12 text-center">
+              <MessageSquare className="w-16 h-16 mx-auto text-slate-300 mb-4" />
+              <h3 className="text-lg font-semibold text-slate-800 mb-2">No hay feedback aún</h3>
+              <p className="text-slate-600">Los comentarios de los usuarios aparecerán aquí</p>
+            </div>
+          )}
+
           {/* Rating Overview */}
-          <div className="bg-gradient-to-br from-[#00B9F1] to-cyan-600 rounded-xl p-6 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Calificación Promedio</h3>
-                <div className="flex items-center gap-2">
-                  <span className="text-4xl font-bold">{promedioCalificacion}</span>
-                  <div className="flex">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-6 h-6 ${
-                          i < Math.round(parseFloat(promedioCalificacion))
-                            ? 'fill-yellow-300 text-yellow-300'
-                            : 'text-white/50'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <p className="text-sm text-white/80 mt-2">Basado en {feedbackData.length} evaluaciones</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-white/80 mb-2">Distribución</p>
-                <div className="space-y-1">
-                  {[5, 4, 3, 2, 1].map(rating => {
-                    const count = feedbackData.filter(f => f.calificacion === rating).length;
-                    const percentage = (count / feedbackData.length) * 100;
-                    return (
-                      <div key={rating} className="flex items-center gap-2">
-                        <span className="text-xs w-8">{rating}★</span>
-                        <div className="w-32 h-2 bg-white/20 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-yellow-300"
-                            style={{ width: `${percentage}%` }}
+          {!loading && feedbackData.length > 0 && (
+            <>
+              <div className="bg-gradient-to-br from-[#00B9F1] to-cyan-600 rounded-xl p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Calificación Promedio</h3>
+                    <div className="flex items-center gap-2">
+                      <span className="text-4xl font-bold">{promedioCalificacion}</span>
+                      <div className="flex">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-6 h-6 ${
+                              i < Math.round(parseFloat(promedioCalificacion))
+                                ? 'fill-yellow-300 text-yellow-300'
+                                : 'text-white/50'
+                            }`}
                           />
-                        </div>
-                        <span className="text-xs w-8">{count}</span>
+                        ))}
                       </div>
-                    );
-                  })}
+                    </div>
+                    <p className="text-sm text-white/80 mt-2">Basado en {feedbackData.length} evaluaciones</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-white/80 mb-2">Distribución</p>
+                    <div className="space-y-1">
+                      {[5, 4, 3, 2, 1].map(rating => {
+                        const count = feedbackData.filter(f => f.calificacion === rating).length;
+                        const percentage = feedbackData.length > 0 ? (count / feedbackData.length) * 100 : 0;
+                        return (
+                          <div key={rating} className="flex items-center gap-2">
+                            <span className="text-xs w-8">{rating}★</span>
+                            <div className="w-32 h-2 bg-white/20 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-yellow-300"
+                                style={{ width: `${percentage}%` }}
+                              />
+                            </div>
+                            <span className="text-xs w-8">{count}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Feedback List */}
-          <div className="space-y-4">
-            {filteredFeedback.map((feedback) => (
-              <div key={feedback.id} className="bg-white/70 backdrop-blur-sm border border-slate-200 rounded-xl p-6 hover:shadow-lg transition-all">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-[#00B9F1] to-cyan-500 rounded-full flex items-center justify-center text-white font-semibold">
-                      {feedback.avatar}
+              {/* Feedback List */}
+              <div className="space-y-4">
+                {filteredFeedback.map((feedback) => (
+                  <div key={feedback.id_feedback} className="bg-white/70 backdrop-blur-sm border border-slate-200 rounded-xl p-6 hover:shadow-lg transition-all">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-gradient-to-br from-[#00B9F1] to-cyan-500 rounded-full flex items-center justify-center text-white font-semibold">
+                          {feedback.avatar}
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-800">{feedback.usuario}</p>
+                          <p className="text-sm text-slate-500">{feedback.fecha}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${getPriorityColor(feedback.prioridad)}`} />
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getTypeColor(feedback.tipo)}`}>
+                          {feedback.tipo}
+                        </span>
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(feedback.estado)}`}>
+                          {feedback.estado.replace('_', ' ')}
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-bold text-slate-800">{feedback.usuario}</p>
-                      <p className="text-sm text-slate-500">{feedback.fecha}</p>
+
+                    <div className="mb-4">
+                      <div className="flex gap-1 mb-3">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-4 h-4 ${
+                              i < feedback.calificacion
+                                ? 'fill-yellow-400 text-yellow-400'
+                                : 'text-slate-300'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <p className="text-slate-700">{feedback.comentario}</p>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button className="flex-1 bg-[#00B9F1] text-white px-4 py-2 rounded-lg font-semibold hover:bg-[#0099CC] transition-all flex items-center justify-center gap-2">
+                        <CheckCircle className="w-4 h-4" />
+                        Marcar como Resuelto
+                      </button>
+                      <button className="px-4 py-2 border-2 border-slate-200 rounded-lg font-semibold hover:bg-slate-50 transition-all flex items-center justify-center gap-2">
+                        <Mail className="w-4 h-4" />
+                        Responder
+                      </button>
+                      <button className="px-4 py-2 border-2 border-slate-200 rounded-lg hover:bg-slate-50 transition-all">
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${getPriorityColor(feedback.prioridad)}`} />
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getTypeColor(feedback.tipo)}`}>
-                      {feedback.tipo}
-                    </span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(feedback.estado)}`}>
-                      {feedback.estado.replace('_', ' ')}
-                    </span>
-                  </div>
-                </div>
+                ))}
+              </div>
 
-                <div className="mb-4">
-                  <div className="flex gap-1 mb-3">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-4 h-4 ${
-                          i < feedback.calificacion
-                            ? 'fill-yellow-400 text-yellow-400'
-                            : 'text-slate-300'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <p className="text-slate-700">{feedback.comentario}</p>
+              {/* Pagination */}
+              <div className="bg-white/70 backdrop-blur-sm border border-slate-200 rounded-xl px-6 py-4 flex items-center justify-between">
+                <div className="text-sm text-slate-600">
+                  Mostrando <span className="font-medium">1-{filteredFeedback.length}</span> de <span className="font-medium">{feedbackData.length}</span> comentarios
                 </div>
-
                 <div className="flex gap-2">
-                  <button className="flex-1 bg-[#00B9F1] text-white px-4 py-2 rounded-lg font-semibold hover:bg-[#0099CC] transition-all flex items-center justify-center gap-2">
-                    <CheckCircle className="w-4 h-4" />
-                    Marcar como Resuelto
+                  <button className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-600 hover:bg-white transition-colors">
+                    Anterior
                   </button>
-                  <button className="px-4 py-2 border-2 border-slate-200 rounded-lg font-semibold hover:bg-slate-50 transition-all flex items-center justify-center gap-2">
-                    <Mail className="w-4 h-4" />
-                    Responder
-                  </button>
-                  <button className="px-4 py-2 border-2 border-slate-200 rounded-lg hover:bg-slate-50 transition-all">
-                    <MoreVertical className="w-4 h-4" />
+                  <button className="px-4 py-2 bg-[#00B9F1] text-white rounded-lg text-sm font-medium hover:bg-[#0099CC] transition-colors">
+                    Siguiente
                   </button>
                 </div>
               </div>
-            ))}
-          </div>
-
-          {/* Pagination */}
-          <div className="bg-white/70 backdrop-blur-sm border border-slate-200 rounded-xl px-6 py-4 flex items-center justify-between">
-            <div className="text-sm text-slate-600">
-              Mostrando <span className="font-medium">1-{filteredFeedback.length}</span> de <span className="font-medium">{feedbackData.length}</span> comentarios
-            </div>
-            <div className="flex gap-2">
-              <button className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-600 hover:bg-white transition-colors">
-                Anterior
-              </button>
-              <button className="px-4 py-2 bg-[#00B9F1] text-white rounded-lg text-sm font-medium hover:bg-[#0099CC] transition-colors">
-                Siguiente
-              </button>
-            </div>
-          </div>
+            </>
+          )}
         </>
       )}
     </div>
