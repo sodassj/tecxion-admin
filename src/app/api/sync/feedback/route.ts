@@ -20,6 +20,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
+// 🔹 Función para capitalizar nombres
+const capitalize = (text: string): string => {
+  if (!text) return '';
+  return text
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 // ✅ Manejar peticiones OPTIONS (preflight)
 export async function OPTIONS() {
   return NextResponse.json({}, { status: 200, headers: corsHeaders });
@@ -74,8 +84,9 @@ export async function GET(req: NextRequest) {
 
     // Formatear datos para el frontend
     const formattedData = filteredReportes.map((item: typeof reportes[0]) => {
+      // 🔹 Capitalizar nombres
       const nombreCompleto = item.usuario 
-        ? `${item.usuario.nombre} ${item.usuario.apellido}`.trim()
+        ? `${capitalize(item.usuario.nombre)} ${capitalize(item.usuario.apellido)}`.trim()
         : 'Usuario Anónimo';
       const userEmail = item.usuario?.correo || 'sin-email@tecsup.edu.pe';
       
@@ -190,7 +201,7 @@ export async function POST(req: NextRequest) {
       data: {
         descripcion: comentario,
         tipo: tipoValido,
-        id_usuario: idUsuario, // 👈 Ahora será el ID correcto o null si no se encontró
+        id_usuario: idUsuario,
       },
       include: {
         usuario: {
@@ -206,9 +217,9 @@ export async function POST(req: NextRequest) {
 
     console.log('✅ Reporte creado con ID:', nuevoReporte.id_reporte_usuario);
 
-    // Generar avatar
+    // 🔹 Generar nombre completo capitalizado
     const nombreCompleto = nuevoReporte.usuario 
-      ? `${nuevoReporte.usuario.nombre} ${nuevoReporte.usuario.apellido}`.trim()
+      ? `${capitalize(nuevoReporte.usuario.nombre)} ${capitalize(nuevoReporte.usuario.apellido)}`.trim()
       : usuario || 'Usuario Anónimo';
     
     const avatar = nombreCompleto
