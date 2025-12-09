@@ -12,12 +12,11 @@ if (process.env.NODE_ENV === 'production') {
   prisma = (global as any).prisma;
 }
 
-// Tipo para rutas con relaciones
 type RutaConRelaciones = {
   id_ruta: number;
   origen_id: number;
   destino_id: number;
-  coordenadas: { lat: number; lng: number }[] | null;
+  coordenadas: any;
   distancia: number | null;
   tiempo_estimado: number | null;
   ruta_optima: string | null;
@@ -25,6 +24,31 @@ type RutaConRelaciones = {
   origen: { id_aula: number; nombre_aula: string; latitud: number; longitud: number };
   destino: { id_aula: number; nombre_aula: string; latitud: number; longitud: number };
 };
+
+// 🔥 Función para normalizar coordenadas a formato array
+function normalizarCoordenadas(coordenadas: any, origen: any, destino: any): { lat: number; lng: number }[] {
+  // Caso 1: Ya es un array válido
+  if (Array.isArray(coordenadas) && coordenadas.length > 0) {
+    return coordenadas.map(c => ({
+      lat: c.lat ?? 0,
+      lng: c.lng ?? 0
+    }));
+  }
+
+  // Caso 2: Es un objeto con formato {origen: {...}, destino: {...}}
+  if (coordenadas && typeof coordenadas === 'object' && coordenadas.origen && coordenadas.destino) {
+    return [
+      { lat: coordenadas.origen.lat ?? 0, lng: coordenadas.origen.lng ?? 0 },
+      { lat: coordenadas.destino.lat ?? 0, lng: coordenadas.destino.lng ?? 0 }
+    ];
+  }
+
+  // Caso 3: Coordenadas vacías o null → usar las aulas
+  return [
+    { lat: origen.latitud ?? 0, lng: origen.longitud ?? 0 },
+    { lat: destino.latitud ?? 0, lng: destino.longitud ?? 0 }
+  ];
+}
 
 // 🔹 GET: obtener todas las rutas con coordenadas como array
 export async function GET() {
@@ -36,24 +60,12 @@ export async function GET() {
       },
     });
 
-    // Transformar coordenadas para que siempre sean un array de puntos
-    const rutasConCoordenadas = rutas.map((r: RutaConRelaciones) => {
-      let coords = r.coordenadas ?? [];
+    const rutasNormalizadas = rutas.map((r: RutaConRelaciones) => ({
+      ...r,
+      coordenadas: normalizarCoordenadas(r.coordenadas, r.origen, r.destino)
+    }));
 
-      if (coords.length === 0) {
-        coords = [
-          { lat: r.origen.latitud, lng: r.origen.longitud },
-          { lat: r.destino.latitud, lng: r.destino.longitud },
-        ];
-      }
-
-      return {
-        ...r,
-        coordenadas: coords,
-      };
-    });
-
-    return NextResponse.json(rutasConCoordenadas);
+    return NextResponse.json(rutasNormalizadas);
   } catch (e) {
     return NextResponse.json(
       { error: 'Error al obtener rutas', details: (e as Error).message },
@@ -86,12 +98,21 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Si no vienen coordenadas, generarlas desde IDs de aulas
       let coords: { lat: number; lng: number }[] = [];
 
-      if (ruta.coordenadas && Array.isArray(ruta.coordenadas) && ruta.coordenadas.length > 0) {
+      // 🔥 Detectar si viene en formato objeto anidado
+      if (ruta.coordenadas && typeof ruta.coordenadas === 'object' && ruta.coordenadas.origen && ruta.coordenadas.destino) {
+        coords = [
+          { lat: ruta.coordenadas.origen.lat, lng: ruta.coordenadas.origen.lng },
+          { lat: ruta.coordenadas.destino.lat, lng: ruta.coordenadas.destino.lng }
+        ];
+      }
+      // Si ya viene como array
+      else if (Array.isArray(ruta.coordenadas) && ruta.coordenadas.length > 0) {
         coords = ruta.coordenadas;
-      } else {
+      }
+      // Si no hay coordenadas, buscar desde aulas
+      else {
         const origenAula = await prisma.aula.findUnique({ where: { id_aula: ruta.origen_id } });
         const destinoAula = await prisma.aula.findUnique({ where: { id_aula: ruta.destino_id } });
 
@@ -106,7 +127,7 @@ export async function POST(req: NextRequest) {
       rutasParaGuardar.push({
         origen_id: ruta.origen_id,
         destino_id: ruta.destino_id,
-        coordenadas: coords,
+        coordenadas: coords, // 🔥 Siempre se guarda como array
         distancia: ruta.distancia ?? null,
         tiempo_estimado: ruta.tiempo_estimado ?? null,
         ruta_optima: ruta.ruta_optima ?? null,
@@ -126,17 +147,12 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Asegurarse que coordenadas devueltas sean array
     if (ultimaRuta) {
-      const coords =
-        ultimaRuta.coordenadas && Array.isArray(ultimaRuta.coordenadas) && ultimaRuta.coordenadas.length > 0
-          ? ultimaRuta.coordenadas
-          : [
-              { lat: ultimaRuta.origen.latitud ?? 0, lng: ultimaRuta.origen.longitud ?? 0 },
-              { lat: ultimaRuta.destino.latitud ?? 0, lng: ultimaRuta.destino.longitud ?? 0 },
-            ];
-
-      ultimaRuta.coordenadas = coords;
+      ultimaRuta.coordenadas = normalizarCoordenadas(
+        ultimaRuta.coordenadas,
+        ultimaRuta.origen,
+        ultimaRuta.destino
+      );
     }
 
     return NextResponse.json({ rutasCreadas: result.count, ruta: ultimaRuta });
