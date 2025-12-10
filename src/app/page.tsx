@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from "next/navigation";
 import Image from 'next/image';
 
@@ -16,8 +16,13 @@ const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
 }) => {
   const [count, setCount] = useState<number>(0);
   const counterRef = useRef<HTMLDivElement | null>(null);
+  const hasAnimated = useRef(false); // 👈 Prevenir múltiples animaciones
 
-  const startAnimation = () => {
+  // 👇 useCallback para mantener la referencia estable
+  const startAnimation = useCallback(() => {
+    if (hasAnimated.current) return; // 👈 Solo animar una vez
+    hasAnimated.current = true;
+
     let startTime: number | null = null;
 
     const animate = (currentTime: number) => {
@@ -33,25 +38,25 @@ const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
     };
 
     requestAnimationFrame(animate);
-  };
+  }, [end, duration]); // 👈 Dependencias estables
 
   useEffect(() => {
-  const observer = new IntersectionObserver(
-    ([entry]) => {
-      if (entry.isIntersecting) {
-        startAnimation();
-      }
-    },
-    { threshold: 0.6 }
-  );
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          startAnimation();
+        }
+      },
+      { threshold: 0.6 }
+    );
 
-  const current = counterRef.current;
-  if (current) observer.observe(current);
+    const current = counterRef.current;
+    if (current) observer.observe(current);
 
-  return () => {
-    if (current) observer.unobserve(current);
-  };
-}, [startAnimation]);
+    return () => {
+      if (current) observer.unobserve(current);
+    };
+  }, [startAnimation]); // 👈 Ahora startAnimation es estable
 
   return (
     <div ref={counterRef} className="text-4xl font-bold text-[#00B9F1]">
@@ -86,17 +91,16 @@ export default function HomePage() {
               <div className="flex items-center space-x-3">
                 {/* Logo Tecsup */}
                 <Image
-            src="/logo-tec1.png"
-            alt="Logo Tecsup"
-            width={140}   
-            height={45}
-            className="h-8 lg:h-11 object-contain"
-          />
+                  src="/logo-tec1.png"
+                  alt="Logo Tecsup"
+                  width={140}   
+                  height={45}
+                  className="h-8 lg:h-11 object-contain"
+                />
               </div>
               <div className="hidden md:flex items-center space-x-6">
                 <div className="flex items-center space-x-6 text-sm font-medium">
                   <span className="text-white font-semibold">Sistema Administrativo</span>
-                 
                 </div>
                 {/* Botón de Iniciar Sesión */}
                 <button
@@ -120,31 +124,31 @@ export default function HomePage() {
               </div>
               {/* Menú hamburguesa para móvil */}
               <button
-  className="md:hidden text-white"
-  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} // 👈 toggle menú
->
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-  </svg>
-</button>
+                className="md:hidden text-white"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
             </div>
           </div>
         </div>
 
-       {isMobileMenuOpen && (
-  <div className="md:hidden bg-[#1D1F21] px-4 py-4 space-y-1">
-    <p className="text-white text-sm font-semibold">Sistema Administrativo</p>
-    <p
-      onClick={() => {
-        setIsMobileMenuOpen(false);
-        handleLoginClick();
-      }}
-      className="text-[#00B9F1] text-sm font-semibold cursor-pointer hover:underline"
-    >
-      Iniciar Sesión
-    </p>
-  </div>
-)}
+        {isMobileMenuOpen && (
+          <div className="md:hidden bg-[#1D1F21] px-4 py-4 space-y-1">
+            <p className="text-white text-sm font-semibold">Sistema Administrativo</p>
+            <p
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                handleLoginClick();
+              }}
+              className="text-[#00B9F1] text-sm font-semibold cursor-pointer hover:underline"
+            >
+              Iniciar Sesión
+            </p>
+          </div>
+        )}
         
         {/* Barra inferior celeste */}
         <div style={{backgroundColor: '#00B9F1'}} className="shadow-md">
@@ -154,7 +158,6 @@ export default function HomePage() {
                 <span className="text-white text-sm font-medium">Sistema de Gestión TecXion</span>
               </div>
               <div className="hidden md:flex items-center space-x-4 text-sm text-white">
-                
               </div>
             </div>
           </div>
@@ -163,22 +166,18 @@ export default function HomePage() {
 
       {/* Main Content */}
       <main className="relative">
-        {/* Subtle background pattern */}
-        
-
         <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           {/* Hero Section */}
           <div className="flex flex-col justify-center items-center text-center w-full">
             {/* Logo Area */}
-            
             <Image
-      src="/tecxion-logo3.png"
-      alt="Logo Tecxion"
-      width={300}
-      height={100} // Ajusta si necesitas otro alto
-      className="relative object-contain filter drop-shadow-lg animate-float-gentle max-w-[90vw]"
-      
-    />
+              src="/tecxion-logo3.png"
+              alt="Logo Tecxion"
+              width={300}
+              height={100}
+              className="relative object-contain filter drop-shadow-lg animate-float-gentle max-w-[90vw]"
+            />
+            
             {/* Title and Subtitle */}
             <div className="mb-12">
               <h1 className="text-4xl md:text-5xl font-bold text-slate-800 mb-4">
@@ -195,8 +194,6 @@ export default function HomePage() {
                 <span>Acceso exclusivo para personal autorizado</span>
               </div>
             </div>
-
-            
           </div>
 
           {/* Features Grid */}
@@ -259,7 +256,6 @@ export default function HomePage() {
             ].map((feature, index) => (
               <div key={index} className="group">
                 <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 shadow-sm border border-slate-200 hover:shadow-md transition-all duration-300 hover:-translate-y-1 h-full"
-                     
                      onMouseEnter={(e) => {
                        e.currentTarget.style.borderColor = '#00B9F1';
                      }}
@@ -280,8 +276,6 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-
-        
 
           {/* Info Section */}
           <div className={`rounded-2xl p-8 md:p-12 text-center text-white transition-all duration-1000 delay-600 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
@@ -317,35 +311,35 @@ export default function HomePage() {
       </main>
 
       {/* Estadísticas Animadas */}
-            <div className="mb-12">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-                <div className="text-center group">
-                  <div className="mb-3 flex justify-center">
-                    <div className="text-4xl font-bold text-[#00B9F1]">1°</div>
-                  </div>
-                  <p className="text-slate-700 font-bold text-lg">Instituto</p>
-                  <p className="text-sm text-slate-500">por su calidad, priorizado por Pronabec</p>
-                </div>
-                
-                <div className="text-center group">
-                  <div className="mb-3 flex justify-center items-center">
-                    <span className="text-[#00B9F1] font-bold text-lg">+</span>
-                    <AnimatedCounter end={250} />
-                  </div>
-                  <p className="text-slate-700 font-bold text-lg">Becas nuevas</p>
-                  <p className="text-sm text-slate-500">por periodo académico</p>
-                </div>
-                
-                <div className="text-center group">
-                  <div className="mb-3 flex justify-center">
-                    <span className="text-[#00B9F1] font-bold text-lg">+</span>
-                    <AnimatedCounter end={89} />
-                  </div>
-                  <p className="text-slate-700 font-bold text-lg">Beca Ferreyros</p>
-                  <p className="text-sm text-slate-500">estudiantes beneficiados</p>
-                </div>
-              </div>
+      <div className="mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto px-4">
+          <div className="text-center group">
+            <div className="mb-3 flex justify-center">
+              <div className="text-4xl font-bold text-[#00B9F1]">1°</div>
             </div>
+            <p className="text-slate-700 font-bold text-lg">Instituto</p>
+            <p className="text-sm text-slate-500">por su calidad, priorizado por Pronabec</p>
+          </div>
+          
+          <div className="text-center group">
+            <div className="mb-3 flex justify-center items-center">
+              <span className="text-[#00B9F1] font-bold text-lg">+</span>
+              <AnimatedCounter end={250} />
+            </div>
+            <p className="text-slate-700 font-bold text-lg">Becas nuevas</p>
+            <p className="text-sm text-slate-500">por periodo académico</p>
+          </div>
+          
+          <div className="text-center group">
+            <div className="mb-3 flex justify-center items-center">
+              <span className="text-[#00B9F1] font-bold text-lg">+</span>
+              <AnimatedCounter end={89} />
+            </div>
+            <p className="text-slate-700 font-bold text-lg">Beca Ferreyros</p>
+            <p className="text-sm text-slate-500">estudiantes beneficiados</p>
+          </div>
+        </div>
+      </div>
 
       {/* Footer */}
       <footer style={{backgroundColor: '#1D1F21'}} className="text-slate-300 py-12">
@@ -367,11 +361,11 @@ export default function HomePage() {
             </div>
             <div>
               <h4 className="text-white font-semibold mb-4">Enlaces Rápidos</h4>
-<div className="space-y-2 text-sm">
-  <a href="#" className="block hover:text-[#00B9F1] transition-colors">Manual de Usuario</a>
-  <a href="#" className="block hover:text-[#00B9F1] transition-colors">Políticas de Seguridad</a>
-  <a href="#" className="block hover:text-[#00B9F1] transition-colors">Centro de Ayuda</a>
-</div>
+              <div className="space-y-2 text-sm">
+                <a href="#" className="block hover:text-[#00B9F1] transition-colors">Manual de Usuario</a>
+                <a href="#" className="block hover:text-[#00B9F1] transition-colors">Políticas de Seguridad</a>
+                <a href="#" className="block hover:text-[#00B9F1] transition-colors">Centro de Ayuda</a>
+              </div>
             </div>
           </div>
           <div className="border-t border-slate-700 mt-8 pt-8 text-center text-sm">
