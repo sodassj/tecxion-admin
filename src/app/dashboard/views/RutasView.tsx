@@ -165,11 +165,11 @@ export default function RutasView() {
 
 
   const stats = [
-    { label: "Rutas Activas", value: rutas.length.toString(), icon: Navigation, color: "bg-blue-500" },
-    { label: "Aulas", value: aulas.length.toString(), icon: Building2, color: "bg-green-500" },
-    { label: "Sincronizadas", value: rutas.filter(r => r.sincronizado).length.toString(), icon: Smartphone, color: "bg-purple-500" },
-    { label: "Asignaciones Auto", value: rutasAsignadasHoy.toString(), icon: Zap, color: "bg-orange-500" }
-  ];
+    { label: "Rutas Activas", value: rutas.length.toString(), icon: Navigation, color: "bg-sky-500" }, 
+    { label: "Aulas", value: aulas.length.toString(), icon: Building2, color: "bg-emerald-500" },
+    { label: "Sincronizadas", value: rutas.filter(r => r.sincronizado).length.toString(), icon: Smartphone, color: "bg-slate-500" }, 
+    { label: "Asignaciones Auto", value: rutasAsignadasHoy.toString(), icon: Zap, color: "bg-teal-500" }
+];
 
   const asignarRutaAutomatica = async (horario: Horario) => {
     if (!horario.id_aula) {
@@ -297,10 +297,15 @@ export default function RutasView() {
   });
 
   const getPopularidadColor = (popularidad: number): string => {
-    if (popularidad >= 80) return 'text-green-600 bg-green-50';
-    if (popularidad >= 60) return 'text-orange-600 bg-orange-50';
-    return 'text-slate-600 bg-slate-50';
-  };
+  // BUENO (Celeste)
+  if (popularidad >= 80) return 'text-sky-700 bg-sky-100'; 
+  
+  // REGULAR (Verde)
+  if (popularidad >= 60) return 'text-emerald-700 bg-emerald-100'; 
+  
+  // BAJO (Plomo/Slate)
+  return 'text-slate-600 bg-slate-100'; 
+};
 
   const getSyncStatusIcon = () => {
     if (syncStatus === 'syncing') return <RefreshCw className="w-5 h-5 animate-spin" />;
@@ -321,7 +326,7 @@ export default function RutasView() {
         <div>
           <h1 className="text-3xl font-bold text-slate-800 flex items-center">
             <Navigation className="w-8 h-8 mr-3 text-[#00B9F1]" />
-            Gestión de Rutas Campus
+            Gestión de Rutas
           </h1>
           <p className="text-slate-600 mt-1">Sistema de administración y asignación de rutas internas</p>
         </div>
@@ -511,38 +516,38 @@ export default function RutasView() {
       </div>
 
       {/* Panel de Asignación Automática */}
-      <div className="bg-gradient-to-r from-orange-50 to-orange-100 border-2 border-orange-200 rounded-xl p-6">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <Zap className="w-6 h-6 text-orange-600" />
-              <h3 className="text-lg font-bold text-slate-800">Asignación Automática de Rutas</h3>
-            </div>
-            <p className="text-slate-600 text-sm mb-4">
-              El sistema puede asignar rutas automáticamente basándose en los horarios de clases programados
-            </p>
-            <div className="flex gap-3">
-              <button 
-                onClick={() => setShowAsignacionModal(true)}
-                className="flex items-center px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-all"
-              >
-                <Zap className="w-4 h-4 mr-2" />
-                Asignar desde Horarios
-              </button>
-              <button className="flex items-center px-4 py-2 bg-white border border-orange-300 text-orange-700 hover:bg-orange-50 rounded-lg font-medium transition-all">
-                <Settings className="w-4 h-4 mr-2" />
-                Configurar Reglas
-              </button>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg px-4 py-2 border-2 border-orange-300">
-            <div className="text-center">
-              <p className="text-sm text-slate-600">Asignadas Hoy</p>
-              <p className="text-2xl font-bold text-orange-600">{rutasAsignadasHoy}</p>
-            </div>
-          </div>
-        </div>
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6">
+  <div className="flex items-start justify-between">
+    <div className="flex-1">
+      <div className="flex items-center gap-3 mb-2">
+        <Zap className="w-6 h-6 text-blue-600" />
+        <h3 className="text-lg font-bold text-slate-800">Asignación Automática de Rutas</h3>
       </div>
+      <p className="text-slate-600 text-sm mb-4">
+        El sistema puede asignar rutas automáticamente basándose en los horarios de clases programados
+      </p>
+      <div className="flex gap-3">
+        <button 
+          onClick={() => setShowAsignacionModal(true)}
+          className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all"
+        >
+          <Zap className="w-4 h-4 mr-2" />
+          Asignar desde Horarios
+        </button>
+        <button className="flex items-center px-4 py-2 bg-white border border-blue-300 text-blue-700 hover:bg-blue-50 rounded-lg font-medium transition-all">
+          <Settings className="w-4 h-4 mr-2" />
+          Configurar Reglas
+        </button>
+      </div>
+    </div>
+    <div className="bg-white rounded-lg px-4 py-2 border-2 border-blue-300">
+      <div className="text-center">
+        <p className="text-sm text-slate-600">Asignadas Hoy</p>
+        <p className="text-2xl font-bold text-blue-600">{rutasAsignadasHoy}</p>
+      </div>
+    </div>
+  </div>
+</div>
 
       {/* Building Selector */}
       <div className="bg-white/70 backdrop-blur-sm border border-slate-200 rounded-xl p-6">
@@ -626,20 +631,24 @@ export default function RutasView() {
                       </div>
 
                       {/* Barra de popularidad */}
-                      <div className="flex items-center gap-4 mb-3">
-                        <div className="flex-1 bg-slate-200 rounded-full h-2 max-w-xs overflow-hidden">
-                          <div
-                            className={`h-full ${
-                              popularidad >= 80
-                                ? "bg-green-500"
-                                : popularidad >= 60
-                                ? "bg-orange-500"
-                                : "bg-slate-400"
-                            } transition-all`}
-                            style={{ width: `${popularidad}%` }}
-                          ></div>
-                        </div>
-                      </div>
+                      {/* Barra de popularidad */}
+<div className="flex items-center gap-4 mb-3">
+    {/* Fondo de la barra: Plomo ligero */}
+    <div className="flex-1 bg-slate-200 rounded-full h-2 max-w-xs overflow-hidden"> 
+        {/* Barra de progreso con color dinámico */}
+        <div
+            className={`h-full ${
+                popularidad >= 80
+                    ? "bg-sky-600" // BUENO: Celeste
+                    : popularidad >= 60
+                    ? "bg-emerald-500" // REGULAR: Verde
+                    : "bg-slate-500" // BAJO: Plomo/Slate
+            } transition-all`}
+            style={{ width: `${popularidad}%` }}
+        ></div>
+    </div>
+    {/* Aquí irá el Tag de Popularidad */}
+</div>
 
                       {/* Información de la ruta */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm text-slate-600 mb-3">
@@ -886,7 +895,7 @@ export default function RutasView() {
             <div className="p-6 border-b border-slate-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Zap className="w-6 h-6 text-orange-600" />
+                  <Zap className="w-6 h-6 text-blue-600" />
                   <h3 className="text-xl font-bold text-slate-800">Asignación Automática</h3>
                 </div>
                 <button 
@@ -924,7 +933,7 @@ export default function RutasView() {
                             }
                             setShowAsignacionModal(false);
                           }}
-                          className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-all"
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all"
                         >
                           Asignar Ruta
                         </button>

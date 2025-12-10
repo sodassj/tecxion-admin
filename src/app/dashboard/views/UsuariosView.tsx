@@ -84,8 +84,8 @@ export default function UsuariosView() {
   const stats = [
     { label: "Total Usuarios", value: "1,247", icon: Users, color: "bg-blue-500" },
     { label: "Activos Hoy", value: "342", icon: Activity, color: "bg-green-500" },
-    { label: "Estudiantes", value: "1,089", icon: Shield, color: "bg-purple-500" },
-    { label: "Docentes", value: "158", icon: Shield, color: "bg-orange-500" }
+    { label: "Estudiantes", value: "1,089", icon: Shield, color: "bg-teal-500" },
+    { label: "Docentes", value: "158", icon: Shield, color: "bg-gray-500" }
   ];
 
   const feedbackStats = [
@@ -99,19 +99,19 @@ export default function UsuariosView() {
       label: "Pendientes", 
       value: feedbackData.filter(f => f.estado === 'pendiente').length.toString(), 
       icon: Clock, 
-      color: "bg-orange-500" 
+      color: "bg-green-500" 
     },
     { 
       label: "En Revisión", 
       value: feedbackData.filter(f => f.estado === 'en_revision').length.toString(), 
       icon: AlertCircle, 
-      color: "bg-yellow-500" 
+      color: "bg-teal-500" 
     },
     { 
       label: "Resueltos", 
       value: feedbackData.filter(f => f.estado === 'resuelto').length.toString(), 
       icon: CheckCircle, 
-      color: "bg-green-500" 
+      color: "bg-gray-500" 
     }
   ];
 
@@ -141,7 +141,7 @@ export default function UsuariosView() {
 
   const getStatusColor = (estado: string) => {
     const colors = {
-      pendiente: 'bg-orange-100 text-orange-700',
+      pendiente: 'bg-orange-100 text-teal-700',
       en_revision: 'bg-blue-100 text-blue-700',
       resuelto: 'bg-green-100 text-green-700'
     };
@@ -399,14 +399,14 @@ export default function UsuariosView() {
                   placeholder="Buscar feedback..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00B9F1] focus:border-transparent"
+                  className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00B9F1] focus:border-transparent text-black"
                 />
               </div>
               <div className="flex gap-3">
                 <select
                   value={filterFeedbackType}
                   onChange={(e) => setFilterFeedbackType(e.target.value)}
-                  className="px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00B9F1] bg-white"
+                  className="px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00B9F1] bg-white text-black"
                 >
                   <option value="todos">Todos los tipos</option>
                   <option value="error">Errores</option>
@@ -416,7 +416,7 @@ export default function UsuariosView() {
                 <select
                   value={filterFeedbackStatus}
                   onChange={(e) => setFilterFeedbackStatus(e.target.value)}
-                  className="px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00B9F1] bg-white"
+                  className="px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00B9F1] bg-white text-black"
                 >
                   <option value="todos">Todos los estados</option>
                   <option value="pendiente">Pendientes</option>
@@ -537,11 +537,12 @@ export default function UsuariosView() {
                     </div>
 
                     <div className="flex gap-2">
-                      <button className="flex-1 bg-[#00B9F1] text-white px-4 py-2 rounded-lg font-semibold hover:bg-[#0099CC] transition-all flex items-center justify-center gap-2">
+                      <button className="bg-gray-600 text-white px-2.5 py-1.5 rounded-md font-medium text-sm hover:bg-gray-700 transition-all flex items-center justify-center gap-1.5 w-fit">
+
                         <CheckCircle className="w-4 h-4" />
                         Marcar como Resuelto
                       </button>
-                      <button className="px-4 py-2 border-2 border-slate-200 rounded-lg font-semibold hover:bg-slate-50 transition-all flex items-center justify-center gap-2">
+                      <button className="px-4 py-2 border-2 border-slate-200 rounded-lg font-semibold hover:bg-slate-50 transition-all flex items-center justify-center gap-2 text-black">
                         <Mail className="w-4 h-4" />
                         Responder
                       </button>
